@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>redis AOF的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="上一篇学习了RDB相关的实现，接下来就轮到AOF了。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/aof/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="redis AOF的实现" />
+<meta property="og:description" content="上一篇学习了RDB相关的实现，接下来就轮到AOF了。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/aof/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-03-02T23:39:28&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-02T23:39:28&#43;08:00" />
+
+<meta itemprop="name" content="redis AOF的实现">
+<meta itemprop="description" content="上一篇学习了RDB相关的实现，接下来就轮到AOF了。"><meta itemprop="datePublished" content="2021-03-02T23:39:28&#43;08:00" />
+<meta itemprop="dateModified" content="2021-03-02T23:39:28&#43;08:00" />
+<meta itemprop="wordCount" content="1843">
+<meta itemprop="keywords" content="redis,how," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="redis AOF的实现"/>
+<meta name="twitter:description" content="上一篇学习了RDB相关的实现，接下来就轮到AOF了。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">redis AOF的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-03-02 </span>
+        
+          <span class="more-meta"> 约 1843 字 </span>
+          <span class="more-meta"> 预计阅读 4 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#是什么">是什么</a></li>
+    <li><a href="#代码分析">代码分析</a>
+      <ul>
+        <li><a href="#feedappendonlyfile"><code>feedAppendOnlyFile</code></a>
+          <ul>
+            <li><a href="#序列化指令">序列化指令</a></li>
+          </ul>
+        </li>
+        <li><a href="#serveraof_buf何时落盘"><code>server.aof_buf</code>何时落盘？</a></li>
+        <li><a href="#执行落盘的flushappendonlyfile">执行落盘的<code>flushAppendOnlyFile</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#学习到的">学习到的</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>上一篇学习了RDB相关的实现，接下来就轮到AOF了。</p>
+<h1 id="是什么">是什么</h1>
+<p>AOF是一种持久化方式，根据Append Only File，
+可以得知是通过追加写的方式来实现的。</p>
+<p>AOF通过追加写入指令来保存数据。</p>
+<h1 id="代码分析">代码分析</h1>
+<p>我们从执行指令的<code>call</code>函数开始分析，
+可以看到，
+检查一些配置后，如果需要将指令扩展到下游，
+就会调用<code>propagate</code>。</p>
+<p>在<code>propatgate</code>中：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">if</span> <span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">aof_state</span> <span class="o">!=</span> <span class="n">AOF_OFF</span> <span class="o">&amp;&amp;</span> <span class="n">flags</span> <span class="o">&amp;</span> <span class="n">PROPAGATE_AOF</span><span class="p">)</span>
+        <span class="n">feedAppendOnlyFile</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="n">dbid</span><span class="p">,</span><span class="n">argv</span><span class="p">,</span><span class="n">argc</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>经过检查之后，通过调用<code>feedAppendOnlyFile</code>来写入到AOF中。
+看起来这里就是将指令转化为AOF文件内容的地方。</p>
+<h2 id="feedappendonlyfile"><code>feedAppendOnlyFile</code></h2>
+<p>总的来说，这个函数是用来将执行的<code>redisCommand</code>对象，
+转换为字符串存储到<code>server.aof_buf</code>，等待后续的刷盘。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">if</span> <span class="p">(</span><span class="n">dictid</span> <span class="o">!=</span> <span class="n">server</span><span class="p">.</span><span class="n">aof_selected_db</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="n">seldb</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
+
+    <span class="n">snprintf</span><span class="p">(</span><span class="n">seldb</span><span class="p">,</span><span class="k">sizeof</span><span class="p">(</span><span class="n">seldb</span><span class="p">),</span><span class="s">&#34;%d&#34;</span><span class="p">,</span><span class="n">dictid</span><span class="p">);</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">sdscatprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="s">&#34;*2</span><span class="se">\r\n</span><span class="s">$6</span><span class="se">\r\n</span><span class="s">SELECT</span><span class="se">\r\n</span><span class="s">$%lu</span><span class="se">\r\n</span><span class="s">%s</span><span class="se">\r\n</span><span class="s">&#34;</span><span class="p">,</span>
+        <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">strlen</span><span class="p">(</span><span class="n">seldb</span><span class="p">),</span><span class="n">seldb</span><span class="p">);</span>
+    <span class="n">server</span><span class="p">.</span><span class="n">aof_selected_db</span> <span class="o">=</span> <span class="n">dictid</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>首先判断了<code>server.aof_selected_db</code>是否是当前指令的执行db，
+如果不是，就写入一个<code>select</code>指令，切换数据库。</p>
+<p>随后是一个大if，序列化指令到局部sds变量<code>buf</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">if</span> <span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">aof_state</span> <span class="o">==</span> <span class="n">AOF_ON</span><span class="p">)</span>
+    <span class="n">server</span><span class="p">.</span><span class="n">aof_buf</span> <span class="o">=</span> <span class="n">sdscatlen</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">aof_buf</span><span class="p">,</span><span class="n">buf</span><span class="p">,</span><span class="n">sdslen</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>最后将<code>buf</code>通过<code>sdscatlen</code>追加到<code>server.aof_buf</code>。</p>
+<p>特别的，针对后台执行AOF重写的情况，
+调用<code>aofRewriteBufferAppend</code>来加速相关工作。</p>
+<h3 id="序列化指令">序列化指令</h3>
+<p>对于各种指令，有一些指令会进行归集。</p>
+<ul>
+<li>
+<p><code>EXPIRE</code> <code>PEXPIRE</code> <code>EXPIREAT</code></p>
+<p>这三个指令将被归集到<code>PEXPIREAT</code>。
+目的一个是提高精度，另一个是转换为绝对时间。</p>
+<p>转换由<code>catAppendOnlyExpireAtCommand</code>完成。</p>
+<p>函数的实现非常的清晰，转换时间单位，相对时间转换为绝对时间，
+最后通过<code>catAppendOnlyGenericCommand</code>来序列化成字符串。</p>
+</li>
+<li>
+<p><code>SETEX</code> <code>PSETEX</code></p>
+<p>类似于上面的三个设置过期时间的指令，
+会转换为一个<code>SET</code>和一个<code>PEXPIREAT</code>。
+分别由<code>catAppendOnlyGenericCommand</code>写入<code>SET</code>
+和<code>catAppendOnlyExpireAtCommant</code>写入<code>PEXPIREAT</code>。</p>
+</li>
+<li>
+<p>有过期时间的<code>SET</code></p>
+<p>类似<code>SETEX</code>，如果有过期时间参数会尝试拆分转换。</p>
+</li>
+<li>
+<p>其他指令</p>
+<p>利用<code>catAppendOnlyGenericCommand</code>来转换。</p>
+</li>
+</ul>
+<p>自然的，需要关注<code>catAppendOnlyGenericCommand</code>的实现，还是非常清晰的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">sds</span> <span class="nf">catAppendOnlyGenericCommand</span><span class="p">(</span><span class="n">sds</span> <span class="n">dst</span><span class="p">,</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="n">robj</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+    <span class="kt">int</span> <span class="n">len</span><span class="p">,</span> <span class="n">j</span><span class="p">;</span>
+    <span class="n">robj</span> <span class="o">*</span><span class="n">o</span><span class="p">;</span>
+
+    <span class="n">buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;*&#39;</span><span class="p">;</span>
+    <span class="n">len</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="n">ll2string</span><span class="p">(</span><span class="n">buf</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">argc</span><span class="p">);</span> <span class="c1">// 写入参数个数
+</span><span class="c1"></span>    <span class="n">buf</span><span class="p">[</span><span class="n">len</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\r&#39;</span><span class="p">;</span>
+    <span class="n">buf</span><span class="p">[</span><span class="n">len</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+    <span class="n">dst</span> <span class="o">=</span> <span class="n">sdscatlen</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span><span class="n">buf</span><span class="p">,</span><span class="n">len</span><span class="p">);</span> <span class="c1">// 将参数个数写入dst
+</span><span class="c1"></span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">argc</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 遍历参数
+</span><span class="c1"></span>        <span class="n">o</span> <span class="o">=</span> <span class="n">getDecodedObject</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span>
+        <span class="n">buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;$&#39;</span><span class="p">;</span>
+        <span class="n">len</span> <span class="o">=</span> <span class="mi">1</span><span class="o">+</span><span class="n">ll2string</span><span class="p">(</span><span class="n">buf</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">sdslen</span><span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">));</span> <span class="c1">// 写入参数内容的长度
+</span><span class="c1"></span>        <span class="n">buf</span><span class="p">[</span><span class="n">len</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\r&#39;</span><span class="p">;</span>
+        <span class="n">buf</span><span class="p">[</span><span class="n">len</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+        <span class="n">dst</span> <span class="o">=</span> <span class="n">sdscatlen</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span><span class="n">buf</span><span class="p">,</span><span class="n">len</span><span class="p">);</span> <span class="c1">// 将参数内容的长度写入dst
+</span><span class="c1"></span>        <span class="n">dst</span> <span class="o">=</span> <span class="n">sdscatlen</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span><span class="n">sdslen</span><span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">));</span> <span class="c1">// 写入参数内容
+</span><span class="c1"></span>        <span class="n">dst</span> <span class="o">=</span> <span class="n">sdscatlen</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span><span class="s">&#34;</span><span class="se">\r\n</span><span class="s">&#34;</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span> <span class="c1">// 写入换行符
+</span><span class="c1"></span>        <span class="n">decrRefCount</span><span class="p">(</span><span class="n">o</span><span class="p">);</span>
+    <span class="p">}</span> 
+    <span class="k">return</span> <span class="n">dst</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="serveraof_buf何时落盘"><code>server.aof_buf</code>何时落盘？</h2>
+<p>每次执行指令之后，都会将指令追加到<code>server.aof_buf</code>，
+完成持久化只需要将这些数据写入盘中就完成了。</p>
+<p>通过跟踪<code>server.aof_buf</code>的引用，
+可以发现这些操作是由<code>flushAppendOnlyFile</code>完成的。</p>
+<p>进一步，触发刷盘操作的地方分别有：</p>
+<ul>
+<li>
+<p><code>serverCron</code></p>
+<p>运行时定时运行。</p>
+</li>
+<li>
+<p><code>beforeSleep</code></p>
+<p>时间循环的每次循环被调用。</p>
+</li>
+<li>
+<p><code>prepareForShutdown</code></p>
+<p>停机之前。</p>
+</li>
+<li>
+<p><code>stopAppendOnly</code></p>
+<p>停止AOF的时候刷盘。</p>
+</li>
+</ul>
+<h2 id="执行落盘的flushappendonlyfile">执行落盘的<code>flushAppendOnlyFile</code></h2>
+<p><code>flushAppendOnlyFile</code>核心逻辑分为两部分：</p>
+<ol>
+<li>调用<code>write</code>将<code>server.aof_buf</code>写入到文件。</li>
+<li>根据条件选择是异步调用或者同步调用<code>fsync</code>保证数据刷到磁盘上。</li>
+</ol>
+<p>下面开始关注更加细节的实现。</p>
+<p>首先检查系统是否需要立即执行保存，如果不需要或者可以推迟的话，就直接返回。</p>
+<p>保存的第一步是调用<code>write</code>的包装函数<code>aofWrite</code>将数据写入文件。
+可以看到内部的实现是简洁清晰的。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// flushAppendOnlyFile
+</span><span class="c1"></span><span class="n">nwritten</span> <span class="o">=</span> <span class="n">aofWrite</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">aof_fd</span><span class="p">,</span><span class="n">server</span><span class="p">.</span><span class="n">aof_buf</span><span class="p">,</span><span class="n">sdslen</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">aof_buf</span><span class="p">));</span>
+
+<span class="c1">// aofWrite
+</span><span class="c1"></span><span class="n">ssize_t</span> <span class="nf">aofWrite</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">ssize_t</span> <span class="n">nwritten</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">totwritten</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+    <span class="k">while</span><span class="p">(</span><span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">nwritten</span> <span class="o">=</span> <span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">len</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">nwritten</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">errno</span> <span class="o">==</span> <span class="n">EINTR</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>
+            <span class="k">return</span> <span class="n">totwritten</span> <span class="o">?</span> <span class="nl">totwritten</span> <span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="n">len</span> <span class="o">-=</span> <span class="n">nwritten</span><span class="p">;</span>
+        <span class="n">buf</span> <span class="o">+=</span> <span class="n">nwritten</span><span class="p">;</span>
+        <span class="n">totwritten</span> <span class="o">+=</span> <span class="n">nwritten</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">totwritten</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>写入后，检查是否写入成功。
+如果失败，会将已经写入的数据清除，避免后续重试时出现重复写入的情况。</p>
+<p>完成写入之后就会去完成刷盘的操作。</p>
+<p>根据配置，如果配置了<code>AOF_FSYNC_ALWAYS</code>，
+就同步的调用<code>redis_fsync</code>宏来完成刷盘，
+具体的工作是<code>fdatasync</code>完成的。</p>
+<p>反之，如果没有正在运行的异步刷盘人物，
+就会调用<code>aof_background_fsync</code>来创建一个异步<code>bio</code>任务 <em>(<code>bioCreateBackgroundJob</code>)</em> 来完成刷盘。</p>
+<h1 id="学习到的">学习到的</h1>
+<ol>
+<li>序列化的时候考虑将相对的时间转换成绝对时间，能够简化实现。</li>
+<li>对于异常应该区分好临时异常，指可通过重试来避免的情况；和非临时异常。</li>
+<li>对于有状态的任务，要做好中途失败后状态的清理。</li>
+</ol>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-03-02
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/how/">how</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/bio/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis bio是什么与如何实现的</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/rdb/">
+            <span class="next-text nav-default">redis RDB的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-03-02 23:39:28 \u002b0800 \u002b0800',
+        title: 'redis AOF的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

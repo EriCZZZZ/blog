@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Redis Cluster练习 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="哇哦，终于可以学习、实践一下Redis Cluster了！
+这一篇主要是简单的概念与集群搭建与简单操作。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/cluster_use/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Redis Cluster练习" />
+<meta property="og:description" content="哇哦，终于可以学习、实践一下Redis Cluster了！
+这一篇主要是简单的概念与集群搭建与简单操作。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/cluster_use/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-03-11T11:09:02&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-11T11:09:02&#43;08:00" />
+
+<meta itemprop="name" content="Redis Cluster练习">
+<meta itemprop="description" content="哇哦，终于可以学习、实践一下Redis Cluster了！
+这一篇主要是简单的概念与集群搭建与简单操作。"><meta itemprop="datePublished" content="2021-03-11T11:09:02&#43;08:00" />
+<meta itemprop="dateModified" content="2021-03-11T11:09:02&#43;08:00" />
+<meta itemprop="wordCount" content="2580">
+<meta itemprop="keywords" content="redis,how,redis-cluster-step-by-step," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Redis Cluster练习"/>
+<meta name="twitter:description" content="哇哦，终于可以学习、实践一下Redis Cluster了！
+这一篇主要是简单的概念与集群搭建与简单操作。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Redis Cluster练习</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-03-11 </span>
+        
+          <span class="more-meta"> 约 2580 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#redis的集群与redis-cluster">Redis的集群与Redis Cluster</a>
+      <ul>
+        <li><a href="#redis-cluster能提供什么功能">Redis Cluster能提供什么功能？</a></li>
+        <li><a href="#rc的实现思路">RC的实现思路</a>
+          <ul>
+            <li><a href="#节点间的通信">节点间的通信</a></li>
+            <li><a href="#分片">分片</a></li>
+            <li><a href="#主从模式保证了可用性">主从模式保证了可用性</a></li>
+          </ul>
+        </li>
+        <li><a href="#rc一致性相关的信息">RC一致性相关的信息</a></li>
+      </ul>
+    </li>
+    <li><a href="#启动一个测试用的redis-cluster集群">启动一个测试用的Redis Cluster集群</a>
+      <ul>
+        <li><a href="#执行reshard操作">执行reshard操作</a></li>
+        <li><a href="#测试节点失效">测试节点失效</a></li>
+        <li><a href="#添加新的节点到集群中">添加新的节点到集群中</a></li>
+        <li><a href="#移除节点">移除节点</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>哇哦，终于可以学习、实践一下Redis Cluster了！</p>
+<p>这一篇主要是简单的概念与集群搭建与简单操作。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/cluster_use/">Redis Cluster练习</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<h1 id="redis的集群与redis-cluster">Redis的集群与Redis Cluster</h1>
+<p>单实例满足不了业务需求的时候，
+一个解决方案是通过集群来分担压力。</p>
+<p><code>Redis Cluster</code>是官方提供的集群化方案，
+能够在网络分区的情况下，提供一定程度的可用性 <em>(availability)</em> 。</p>
+<p>除了RC之外，还有如<a href="https://github.com/CodisLabs/codis">Codis</a>等实现方案。</p>
+<p>主要会介绍如下的几个方面的偏向实践角度的观点：</p>
+<ul>
+<li>对RC能够提供的服务的感性认识</li>
+<li>简化的集群工作原理</li>
+<li>一致性相关的信息</li>
+</ul>
+<p>下面的内容更多的是对<a href="https://redis.io/topics/cluster-tutorial">Redis cluster tutorial</a>的<del>机械</del>翻译。</p>
+<h2 id="redis-cluster能提供什么功能">Redis Cluster能提供什么功能？</h2>
+<ol>
+<li>
+<p>自动化的分配数据到不同节点</p>
+<p>这是我们选择集群的根本原因，
+通过分配功能、存储压力到不同的节点，来提高对外提供服务的能力。</p>
+</li>
+<li>
+<p>在网络分区的情况下，提供一定程度的可用性</p>
+<p>RC能够在网络分区或某些节点无法正常提供服务的情况下，继续提供服务。</p>
+</li>
+</ol>
+<h2 id="rc的实现思路">RC的实现思路</h2>
+<h3 id="节点间的通信">节点间的通信</h3>
+<p>首先是节点之间的通信，
+RC中的实例拥有两个端口，分别是普通的、向客户端提供服务的和用于集群间通信的端口。</p>
+<p>利用“通信的端口”的节点间信道被称作<code>集群总线</code>，
+各个节点之间在这个总线上，
+利用二进制协议来完成探活、配置更新、故障恢复鉴权等维护集群正常的功能需要的信息交流。</p>
+<h3 id="分片">分片</h3>
+<p>采用hash槽的方式来进行分片。
+将key的CRC16模16384作为分片的id，
+特别的，可以使用相同的<code>hash tag</code>来令不同的key保存在同一个槽上。</p>
+<p>利用<code>hash tag</code>的特性，可以一定程度的支持操作多个key的指令。</p>
+<h3 id="主从模式保证了可用性">主从模式保证了可用性</h3>
+<p>通过给每个hash槽配备主节点和若干副本来实现在主节点无法正常工作时提升从节点来保证可用。</p>
+<p>如果一个hash槽的所有实例都失效了，那么就无法正常工作。</p>
+<h2 id="rc一致性相关的信息">RC一致性相关的信息</h2>
+<p>RC不提供强一致性 <em>(strong consistency)</em> 保证。
+在某些场景下，即便服务器返回了写入的ACK，但数据还是会丢失。</p>
+<p>写入到集群的操作流程大概是：</p>
+<ol>
+<li>client向master写入数据，master返回ack</li>
+<li>master向从节点广播这个写入</li>
+<li>从节点写入这个修改</li>
+</ol>
+<p>产生丢失的一个情况是：
+如果在 “master向从节点广播这个写入” 的时候，master发生了crash。
+参考数据库的redo log，可以将写入提前到回应成功来避免这种情景下的丢失。</p>
+<p>另一个会产生丢失的场景是当一个主实例与其他的节点发生网络分区，无法通信。
+在该失效的实例发生问题到发现自己无法正常工作之间的写入，
+都无法被访问另一分区的客户端读取到，且如果没有特别的处理，这部分数据会发生丢失（因为没有复制到新的主节点）。
+特别的，这个时间叫做<strong>node timeout</strong>。</p>
+<h1 id="启动一个测试用的redis-cluster集群">启动一个测试用的Redis Cluster集群</h1>
+<p>以一个三主三从的集群为例子。</p>
+<p>我打包了一个docker镜像，可以直接使用。
+出于简化考虑，将所有实例放在一起了，避免处理多个容器互联的问题。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">docker run -dp 7000-7005:7000-7005 --name redis_cluster er1cz/redis_cluster
+</code></pre></td></tr></table>
+</div>
+</div><p>镜像暴露了7000-7005六个端口，分别是六个实例的端口，然后在本机可以使用redis-cli正常操作。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli -c -p <span class="m">7000</span>
+127.0.0.1:7000&gt; get key1
+-&gt; Redirected to slot <span class="o">[</span>9189<span class="o">]</span> located at 127.0.0.1:7001
+<span class="o">(</span>nil<span class="o">)</span>
+127.0.0.1:7001&gt; <span class="nb">set</span> key1 value1
+OK
+127.0.0.1:7001&gt; get key1
+<span class="s2">&#34;value1&#34;</span>
+127.0.0.1:7001&gt;
+</code></pre></td></tr></table>
+</div>
+</div><p>上述命令，<code>-c</code>指明客户端使用集群模式，连接7000端口的服务器。
+后续执行了读写操作，没有任何问题。</p>
+<h2 id="执行reshard操作">执行reshard操作</h2>
+<p>执行<code>redis-cli --cluster reshard 127.0.0.1:7000</code>开始重新分片。</p>
+<ol>
+<li>首先会要求输入多少个hash槽，这里为了方便演示选择了一个。</li>
+<li>然后需要输入哪个节点需要接受这些槽，这里输入了7000端口上的实例的id。</li>
+<li>然后是从哪些节点移除槽，可以一个一个的输入节点id，随后输入done；
+也可以输入all选择所有节点来输出，这可以用在有新节点加入的情况。这里选择了7002端口的实例来提供槽。</li>
+<li>最后redis会提供一个移动方案，输入yes来开始执行reshard操作。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster reshard 127.0.0.1:7000
+&gt;&gt;&gt; Performing Cluster Check <span class="o">(</span>using node 127.0.0.1:7000<span class="o">)</span>
+M: 13c73f2de3d6a2ac4fd4d99d359a9bd3693a7e5f 127.0.0.1:7000
+   slots:<span class="o">[</span>0-5460<span class="o">]</span> <span class="o">(</span><span class="m">5461</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+S: 92dccaed8da01ceaea3e711e456ca76f78c0e55e 127.0.0.1:7005
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 080227d20bfb70af6603d68c4a94e3bd73050142
+S: b6c39a0699dd33247dc8d94f21030f5fecedac76 127.0.0.1:7003
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 977028968d051b051ddb094a87cf3f71d37b9b75
+M: 977028968d051b051ddb094a87cf3f71d37b9b75 127.0.0.1:7002
+   slots:<span class="o">[</span>10923-16383<span class="o">]</span> <span class="o">(</span><span class="m">5461</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+S: cbddaf7e40f2cc3651a9ec62493efe37aee85506 127.0.0.1:7004
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 13c73f2de3d6a2ac4fd4d99d359a9bd3693a7e5f
+M: 080227d20bfb70af6603d68c4a94e3bd73050142 127.0.0.1:7001
+   slots:<span class="o">[</span>5461-10922<span class="o">]</span> <span class="o">(</span><span class="m">5462</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+<span class="o">[</span>OK<span class="o">]</span> All nodes agree about slots configuration.
+&gt;&gt;&gt; Check <span class="k">for</span> open slots...
+&gt;&gt;&gt; Check slots coverage...
+<span class="o">[</span>OK<span class="o">]</span> All <span class="m">16384</span> slots covered.
+How many slots <span class="k">do</span> you want to move <span class="o">(</span>from <span class="m">1</span> to 16384<span class="o">)</span>? <span class="m">1</span>
+What is the receiving node ID? 13c73f2de3d6a2ac4fd4d99d359a9bd3693a7e5f
+Please enter all the <span class="nb">source</span> node IDs.
+  Type <span class="s1">&#39;all&#39;</span> to use all the nodes as <span class="nb">source</span> nodes <span class="k">for</span> the <span class="nb">hash</span> slots.
+  Type <span class="s1">&#39;done&#39;</span> once you entered all the <span class="nb">source</span> nodes IDs.
+Source node <span class="c1">#1: 977028968d051b051ddb094a87cf3f71d37b9b75</span>
+Source node <span class="c1">#2: done</span>
+
+Ready to move <span class="m">1</span> slots.
+  Source nodes:
+    M: 977028968d051b051ddb094a87cf3f71d37b9b75 127.0.0.1:7002
+       slots:<span class="o">[</span>10923-16383<span class="o">]</span> <span class="o">(</span><span class="m">5461</span> slots<span class="o">)</span> master
+       <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+  Destination node:
+    M: 13c73f2de3d6a2ac4fd4d99d359a9bd3693a7e5f 127.0.0.1:7000
+       slots:<span class="o">[</span>0-5460<span class="o">]</span> <span class="o">(</span><span class="m">5461</span> slots<span class="o">)</span> master
+       <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+  Resharding plan:
+    Moving slot <span class="m">10923</span> from 977028968d051b051ddb094a87cf3f71d37b9b75
+Do you want to proceed with the proposed reshard plan <span class="o">(</span>yes/no<span class="o">)</span>? yes
+Moving slot <span class="m">10923</span> from 127.0.0.1:7002 to 127.0.0.1:7000:
+</code></pre></td></tr></table>
+</div>
+</div><p>然后执行<code>redis-cli --cluster check 127.0.0.1:7000</code>查看集群信息，
+可以看到7000端口的实例的槽从5461个变成了5462个，7002端口的实例则减少了一个。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster check 127.0.0.1:7000
+127.0.0.1:7000 <span class="o">(</span>13c73f2d...<span class="o">)</span> -&gt; <span class="m">0</span> keys <span class="p">|</span> <span class="m">5462</span> slots <span class="p">|</span> <span class="m">1</span> slaves.
+127.0.0.1:7002 <span class="o">(</span>97702896...<span class="o">)</span> -&gt; <span class="m">0</span> keys <span class="p">|</span> <span class="m">5460</span> slots <span class="p">|</span> <span class="m">1</span> slaves.
+127.0.0.1:7001 <span class="o">(</span>080227d2...<span class="o">)</span> -&gt; <span class="m">1</span> keys <span class="p">|</span> <span class="m">5462</span> slots <span class="p">|</span> <span class="m">1</span> slaves.
+<span class="o">[</span>OK<span class="o">]</span> <span class="m">1</span> keys in <span class="m">3</span> masters.
+0.00 keys per slot on average.
+&gt;&gt;&gt; Performing Cluster Check <span class="o">(</span>using node 127.0.0.1:7000<span class="o">)</span>
+M: 13c73f2de3d6a2ac4fd4d99d359a9bd3693a7e5f 127.0.0.1:7000
+   slots:<span class="o">[</span>0-5460<span class="o">]</span>,<span class="o">[</span>10923<span class="o">]</span> <span class="o">(</span><span class="m">5462</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+S: 92dccaed8da01ceaea3e711e456ca76f78c0e55e 127.0.0.1:7005
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 080227d20bfb70af6603d68c4a94e3bd73050142
+S: b6c39a0699dd33247dc8d94f21030f5fecedac76 127.0.0.1:7003
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 977028968d051b051ddb094a87cf3f71d37b9b75
+M: 977028968d051b051ddb094a87cf3f71d37b9b75 127.0.0.1:7002
+   slots:<span class="o">[</span>10924-16383<span class="o">]</span> <span class="o">(</span><span class="m">5460</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+S: cbddaf7e40f2cc3651a9ec62493efe37aee85506 127.0.0.1:7004
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 13c73f2de3d6a2ac4fd4d99d359a9bd3693a7e5f
+M: 080227d20bfb70af6603d68c4a94e3bd73050142 127.0.0.1:7001
+   slots:<span class="o">[</span>5461-10922<span class="o">]</span> <span class="o">(</span><span class="m">5462</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+<span class="o">[</span>OK<span class="o">]</span> All nodes agree about slots configuration.
+&gt;&gt;&gt; Check <span class="k">for</span> open slots...
+&gt;&gt;&gt; Check slots coverage...
+<span class="o">[</span>OK<span class="o">]</span> All <span class="m">16384</span> slots covered.
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="测试节点失效">测试节点失效</h2>
+<p>我首先写入<code>key1</code>到集群中，发现被存储在7001实例上。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">127.0.0.1:7000&gt; get key1
+-&gt; Redirected to slot <span class="o">[</span>9189<span class="o">]</span> located at 127.0.0.1:7001
+<span class="s2">&#34;value1&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>查看拓扑结构，可以看到7005是7001的从节点。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster check 127.0.0.1:7000
+<span class="c1"># ...</span>
+127.0.0.1:7001 <span class="o">(</span>080227d2...<span class="o">)</span> -&gt; <span class="m">1</span> keys <span class="p">|</span> <span class="m">5462</span> slots <span class="p">|</span> <span class="m">1</span> slaves.
+<span class="o">[</span>OK<span class="o">]</span> <span class="m">1</span> keys in <span class="m">3</span> masters.
+0.00 keys per slot on average.
+S: 92dccaed8da01ceaea3e711e456ca76f78c0e55e 127.0.0.1:7005
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 080227d20bfb70af6603d68c4a94e3bd73050142
+<span class="c1"># ...</span>
+M: 080227d20bfb70af6603d68c4a94e3bd73050142 127.0.0.1:7001
+   slots:<span class="o">[</span>5461-10922<span class="o">]</span> <span class="o">(</span><span class="m">5462</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+<span class="o">[</span>OK<span class="o">]</span> All nodes agree about slots configuration.
+&gt;&gt;&gt; Check <span class="k">for</span> open slots...
+&gt;&gt;&gt; Check slots coverage...
+<span class="o">[</span>OK<span class="o">]</span> All <span class="m">16384</span> slots covered.
+</code></pre></td></tr></table>
+</div>
+</div><p>接下来利用<code>redis-cli -p 7001 debug segfault</code>来模拟7001实例失效。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli -p <span class="m">7001</span> debug segfault
+Error: Server closed the connection
+</code></pre></td></tr></table>
+</div>
+</div><p>然后在去查询<code>key1</code>，可以看到，现在是由7005实例来提供服务。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli -p <span class="m">7000</span> -c
+127.0.0.1:7000&gt; get key1
+-&gt; Redirected to slot <span class="o">[</span>9189<span class="o">]</span> located at 127.0.0.1:7005
+<span class="s2">&#34;value1&#34;</span>
+127.0.0.1:7005&gt;
+</code></pre></td></tr></table>
+</div>
+</div><p>这个时候如果启动7001实例，会看到实例自动接入到集群，并成为7005的从节点。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell"><span class="c1"># 在容器中</span>
+./redis/src/redis-server --protected-mode no --daemonize yes --port <span class="m">7001</span> --cluster-enabled yes --cluster-config-file nodes1.conf --cluster-node-timeout <span class="m">5000</span> --appendonly yes
+<span class="c1"># 检查集群</span>
+redis-cli --cluster check 127.0.0.1:7000
+
+<span class="c1"># ...</span>
+M: 92dccaed8da01ceaea3e711e456ca76f78c0e55e 127.0.0.1:7005
+   slots:<span class="o">[</span>5461-10922<span class="o">]</span> <span class="o">(</span><span class="m">5462</span> slots<span class="o">)</span> master
+   <span class="m">1</span> additional replica<span class="o">(</span>s<span class="o">)</span>
+<span class="c1">#...</span>
+S: 080227d20bfb70af6603d68c4a94e3bd73050142 127.0.0.1:7001
+   slots: <span class="o">(</span><span class="m">0</span> slots<span class="o">)</span> slave
+   replicates 92dccaed8da01ceaea3e711e456ca76f78c0e55e
+<span class="c1">#...</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="添加新的节点到集群中">添加新的节点到集群中</h2>
+<p>添加节点到集群中可以用：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000
+</code></pre></td></tr></table>
+</div>
+</div><p>默认的，会将新节点当作master节点，但没有分配槽，可以通过reshard来手动的分配。</p>
+<p>如果想将新节点作为从节点，那么可以增加参数：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000 --cluster-slave
+</code></pre></td></tr></table>
+</div>
+</div><p>也可以在增加参数指定主节点：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000 --cluster-slave --cluster-master-id <span class="nv">$CLUSTER_MASTER_ID</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="移除节点">移除节点</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">redis-cli --cluster del-node 127.0.0.1:7000 <span class="nv">$CLUSTER_WAIT_REMOVE_ID</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>特别的，如果是主节点，那么需要清空后才可以移除掉。</p>
+<h1 id="参考">参考</h1>
+<ul>
+<li><a href="https://redis.io/topics/cluster-tutorial">Redis cluster tutorial</a></li>
+<li><a href="https://redis.io/topics/cluster-spec">Redis cluster specification</a></li>
+</ul>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-03-11
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/how/">how</a>
+          <a href="/tags/redis-cluster-step-by-step/">redis-cluster-step-by-step</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/linux/expect/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">如何用脚本登录远程机器——expect用法</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/bio/">
+            <span class="next-text nav-default">redis bio是什么与如何实现的</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-03-11 11:09:02 \u002b0800 \u002b0800',
+        title: 'Redis Cluster练习',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>redis中pqsort的简单分析 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/redis_pqsort/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="redis中pqsort的简单分析" />
+<meta property="og:description" content="pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/redis_pqsort/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-24T14:34:03&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-24T14:34:03&#43;08:00" />
+
+<meta itemprop="name" content="redis中pqsort的简单分析">
+<meta itemprop="description" content="pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量"><meta itemprop="datePublished" content="2020-11-24T14:34:03&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-24T14:34:03&#43;08:00" />
+<meta itemprop="wordCount" content="1964">
+<meta itemprop="keywords" content="redis,algorithm,what," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="redis中pqsort的简单分析"/>
+<meta name="twitter:description" content="pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">redis中pqsort的简单分析</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-24 </span>
+        
+          <span class="more-meta"> 约 1964 字 </span>
+          <span class="more-meta"> 预计阅读 4 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+
+    <div class="post-content">
+      <p><code>pqsort</code>提供从指定位置开始，排序指定长度的元素的功能。
+主要使用在<code>SORT</code>指令上。
+其基础思想是快排的分组。</p>
+<p>主要的优化思想有如下几个：</p>
+<ol>
+<li>在数量较小的时候，采用插入排序而不是分治。</li>
+<li>只选择需要的范围进行精确的排序。</li>
+<li>选择比较用的值的时候，通过采样若干点来确定更中间的值。</li>
+<li>在分治时，后半部分用循环代替一次递归，减少栈的消耗。</li>
+<li>交换的时候尽量的提高每次交换的字长。</li>
+</ol>
+<p><em>src/pqsort.c</em></p>
+<p>首先看下交换，redis对容器对齐到long且元素长度为long的整数倍情况的交换采用了一些优化。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// swaptype标志了元素的交换类型
+</span><span class="c1">// SWAPINIT计算出swaptype
+</span><span class="c1">// 0 容器对齐到long且元素长度是long的长度倍数，元素的长度为long
+</span><span class="c1">// 1 容器对齐到long且元素长度是long的长度倍数，元素的长度不为long：即long整数倍的长度，可以加速
+</span><span class="c1">// 2 如果要交换的容器的地址没有对齐long或元素的长度不为long的整数倍
+</span><span class="c1"></span><span class="cp">#define SWAPINIT(a, es) swaptype = ((char *)a - (char *)0) % sizeof(long) || \
+</span><span class="cp">  es % sizeof(long) ? 2 : es == sizeof(long)? 0 : 1;
+</span><span class="cp"></span>
+<span class="c1">// swap宏是pqsort交换的入口
+</span><span class="c1"></span><span class="cp">#define swap(a, b)            \
+</span><span class="cp">if (swaptype == 0) {           \
+</span><span class="cp">  long t = *(long *)(void *)(a);      \
+</span><span class="cp">  *(long *)(void *)(a) = *(long *)(void *)(b);  \
+</span><span class="cp">  *(long *)(void *)(b) = t;      \
+</span><span class="cp">} else              \
+</span><span class="cp">  swapfunc(a, b, es, swaptype) </span><span class="c1">// 其他类型调用swapfunc来交换
+</span><span class="c1"></span>
+<span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span>
+<span class="nf">swapfunc</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">n</span><span class="cm">/*es*/</span><span class="p">,</span> <span class="kt">int</span> <span class="n">swaptype</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">swaptype</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)</span> <span class="c1">// 对齐且长度是long两倍或以上，这个时候可以以long为单位来交换
+</span><span class="c1"></span>    <span class="n">swapcode</span><span class="p">(</span><span class="kt">long</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+  <span class="k">else</span> <span class="c1">// 没有对齐或者长度不为long的整数倍，意味着不能按照long作为单位来交换，换用char
+</span><span class="c1"></span>    <span class="n">swapcode</span><span class="p">(</span><span class="kt">char</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="cp">#define swapcode(TYPE, parmi, parmj, n) {     \
+</span><span class="cp">  size_t i = (n) / sizeof (TYPE);     \ </span><span class="cm">/* 计算要交换几次 */</span><span class="cp">
+</span><span class="cp"></span>  <span class="n">TYPE</span> <span class="o">*</span><span class="n">pi</span> <span class="o">=</span> <span class="p">(</span><span class="n">TYPE</span> <span class="o">*</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)(</span><span class="n">parmi</span><span class="p">);</span>     \
+  <span class="n">TYPE</span> <span class="o">*</span><span class="n">pj</span> <span class="o">=</span> <span class="p">(</span><span class="n">TYPE</span> <span class="o">*</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)(</span><span class="n">parmj</span><span class="p">);</span>     \
+  <span class="k">do</span> <span class="p">{</span>             \
+    <span class="c1">// 交换特定的次数
+</span><span class="c1"></span>    <span class="n">TYPE</span>  <span class="n">t</span> <span class="o">=</span> <span class="o">*</span><span class="n">pi</span><span class="p">;</span>      \
+    <span class="o">*</span><span class="n">pi</span><span class="o">++</span> <span class="o">=</span> <span class="o">*</span><span class="n">pj</span><span class="p">;</span>        \
+    <span class="o">*</span><span class="n">pj</span><span class="o">++</span> <span class="o">=</span> <span class="n">t</span><span class="p">;</span>        \
+  <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="o">--</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>        \
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后就是排序的具体实现：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// a 要排序的容器
+</span><span class="c1">// n 容器的长度
+</span><span class="c1">// es entry_size 每个元素的长度？
+</span><span class="c1">// cmp 比较函数
+</span><span class="c1">//    - 1  val1 &gt; val2
+</span><span class="c1">//    - 0   val1 == val2
+</span><span class="c1">//    - -1   val1 &lt; val2
+</span><span class="c1">// lrange 开始
+</span><span class="c1">// rrang 结束
+</span><span class="c1"></span><span class="k">static</span> <span class="kt">void</span>
+<span class="nf">_pqsort</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">es</span><span class="p">,</span>
+    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">cmp</span><span class="p">)</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="n">lrange</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">rrange</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="kt">char</span> <span class="o">*</span><span class="n">pa</span><span class="p">,</span> <span class="o">*</span><span class="n">pb</span><span class="p">,</span> <span class="o">*</span><span class="n">pc</span><span class="p">,</span> <span class="o">*</span><span class="n">pd</span><span class="p">,</span> <span class="o">*</span><span class="n">pl</span><span class="p">,</span> <span class="o">*</span><span class="n">pm</span><span class="p">,</span> <span class="o">*</span><span class="n">pn</span><span class="p">;</span>
+  <span class="n">size_t</span> <span class="n">d</span><span class="p">,</span> <span class="n">r</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">swaptype</span><span class="p">,</span> <span class="n">cmp_result</span><span class="p">;</span>
+
+<span class="nl">loop</span><span class="p">:</span>  <span class="n">SWAPINIT</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">es</span><span class="p">);</span> <span class="c1">// 初始化交换时需要的一些值
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">7</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 如果容器的长度小于7，完成一个插入排序
+</span><span class="c1"></span>    <span class="k">for</span> <span class="p">(</span><span class="n">pm</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="n">es</span><span class="p">;</span> <span class="n">pm</span> <span class="o">&lt;</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">es</span><span class="p">;</span> <span class="n">pm</span> <span class="o">+=</span> <span class="n">es</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">pl</span> <span class="o">=</span> <span class="n">pm</span><span class="p">;</span> <span class="n">pl</span> <span class="o">&gt;</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">&amp;&amp;</span> <span class="n">cmp</span><span class="p">(</span><span class="n">pl</span> <span class="o">-</span> <span class="n">es</span><span class="p">,</span> <span class="n">pl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span>
+           <span class="n">pl</span> <span class="o">-=</span> <span class="n">es</span><span class="p">)</span>
+        <span class="n">swap</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">pl</span> <span class="o">-</span> <span class="n">es</span><span class="p">);</span>
+    <span class="k">return</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="c1">// pm的含义是一个可能是中间大小的值的下标
+</span><span class="c1"></span>  <span class="n">pm</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">es</span><span class="p">;</span> <span class="c1">// 简单的获取中间
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 数量大于7的时候
+</span><span class="c1"></span>    <span class="c1">// 采样获取一个更可能偏向中间的值的下标到pm上
+</span><span class="c1"></span>    <span class="n">pl</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span><span class="p">;</span> <span class="c1">// pl指向开头
+</span><span class="c1"></span>    <span class="n">pn</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">es</span><span class="p">;</span> <span class="c1">// pl指向结尾
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">40</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// 数量大于40的时候
+</span><span class="c1"></span>      <span class="c1">// 采样更多的点（9个）
+</span><span class="c1"></span>      <span class="n">d</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)</span> <span class="o">*</span> <span class="n">es</span><span class="p">;</span>
+      <span class="n">pl</span> <span class="o">=</span> <span class="n">med3</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">pl</span> <span class="o">+</span> <span class="n">d</span><span class="p">,</span> <span class="n">pl</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">d</span><span class="p">,</span> <span class="n">cmp</span><span class="p">);</span> <span class="c1">// med3 从三个下标中取出值位于中间的那个下标
+</span><span class="c1"></span>      <span class="n">pm</span> <span class="o">=</span> <span class="n">med3</span><span class="p">(</span><span class="n">pm</span> <span class="o">-</span> <span class="n">d</span><span class="p">,</span> <span class="n">pm</span><span class="p">,</span> <span class="n">pm</span> <span class="o">+</span> <span class="n">d</span><span class="p">,</span> <span class="n">cmp</span><span class="p">);</span>
+      <span class="n">pn</span> <span class="o">=</span> <span class="n">med3</span><span class="p">(</span><span class="n">pn</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">d</span><span class="p">,</span> <span class="n">pn</span> <span class="o">-</span> <span class="n">d</span><span class="p">,</span> <span class="n">pn</span><span class="p">,</span> <span class="n">cmp</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">pm</span> <span class="o">=</span> <span class="n">med3</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">pm</span><span class="p">,</span> <span class="n">pn</span><span class="p">,</span> <span class="n">cmp</span><span class="p">);</span> <span class="c1">// 再结合一次
+</span><span class="c1"></span>  <span class="p">}</span>
+  <span class="n">swap</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">pm</span><span class="p">);</span> <span class="c1">// 将采样的中等大小的值交换到第一个下标上，以下简称分割值
+</span><span class="c1"></span>  <span class="n">pa</span> <span class="o">=</span> <span class="n">pb</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="n">es</span><span class="p">;</span> <span class="c1">// pa/pb指向第二个下标
+</span><span class="c1"></span>
+  <span class="n">pc</span> <span class="o">=</span> <span class="n">pd</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">es</span><span class="p">;</span> <span class="c1">// pc/pd指向最后一个下标
+</span><span class="c1"></span>  <span class="c1">// 这个循环结束后，[a,pa)和(pd, a + n * es)是等于分割值的元素
+</span><span class="c1"></span>  <span class="c1">// [pa,pc]是小于分割值的部分
+</span><span class="c1"></span>  <span class="c1">// [pb,pd]是大于分割值的部分
+</span><span class="c1"></span>  <span class="k">for</span> <span class="p">(;;)</span> <span class="p">{</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">pb</span> <span class="o">&lt;=</span> <span class="n">pc</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">cmp_result</span> <span class="o">=</span> <span class="n">cmp</span><span class="p">(</span><span class="n">pb</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// 这个循环用来找到第一个大于分割值的下标
+</span><span class="c1"></span>      <span class="c1">// cmp_result &lt;= 0意味着 pb &lt;= a
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">(</span><span class="n">cmp_result</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">swap</span><span class="p">(</span><span class="n">pa</span><span class="p">,</span> <span class="n">pb</span><span class="p">);</span>
+        <span class="n">pa</span> <span class="o">+=</span> <span class="n">es</span><span class="p">;</span>
+        <span class="c1">// 这个时候，交换完之后的pb的值一定是小于等与分割的值
+</span><span class="c1"></span>        <span class="c1">// 考虑第一次比较，此时pa、pb指向同一个值，
+</span><span class="c1"></span>        <span class="c1">// 如果这个值大于分割值，那么就会与尾部交换，
+</span><span class="c1"></span>        <span class="c1">// 直到这个值小于等于分割值
+</span><span class="c1"></span>      <span class="p">}</span>
+      <span class="n">pb</span> <span class="o">+=</span> <span class="n">es</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">pb</span> <span class="o">&lt;=</span> <span class="n">pc</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">cmp_result</span> <span class="o">=</span> <span class="n">cmp</span><span class="p">(</span><span class="n">pc</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// 和上一个循环类似，从尾部找到第一个小于分割值的下标
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">(</span><span class="n">cmp_result</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">swap</span><span class="p">(</span><span class="n">pc</span><span class="p">,</span> <span class="n">pd</span><span class="p">);</span>
+        <span class="n">pd</span> <span class="o">-=</span> <span class="n">es</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="n">pc</span> <span class="o">-=</span> <span class="n">es</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// 现在pb/pc分别指在大于和小于分割值的地方上，两者需要交换
+</span><span class="c1"></span>    <span class="c1">// pa之前，pd之后是等于分割值的地方
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">pb</span> <span class="o">&gt;</span> <span class="n">pc</span><span class="p">)</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="n">swap</span><span class="p">(</span><span class="n">pb</span><span class="p">,</span> <span class="n">pc</span><span class="p">);</span> <span class="c1">// 完成交换
+</span><span class="c1"></span>    <span class="n">pb</span> <span class="o">+=</span> <span class="n">es</span><span class="p">;</span> <span class="c1">// 进入下一次寻找
+</span><span class="c1"></span>    <span class="n">pc</span> <span class="o">-=</span> <span class="n">es</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">pn</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">es</span><span class="p">;</span> <span class="c1">// 指向尾部
+</span><span class="c1"></span>  <span class="c1">// 接下来调用两次vecswap来将等于的部分放到中间
+</span><span class="c1"></span>  <span class="c1">// 比较有趣的一点，不需要考虑是小于分割值的部分和等于分割值的部分哪个长一些
+</span><span class="c1"></span>  <span class="c1">// 因为只需要将[a, a + r]和[pb - r, pb]进行交换即可
+</span><span class="c1"></span>  <span class="n">r</span> <span class="o">=</span> <span class="n">min</span><span class="p">(</span><span class="n">pa</span> <span class="o">-</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span> <span class="n">a</span><span class="p">,</span> <span class="n">pb</span> <span class="o">-</span> <span class="n">pa</span><span class="p">);</span>
+  <span class="n">vecswap</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">pb</span> <span class="o">-</span> <span class="n">r</span><span class="p">,</span> <span class="n">r</span><span class="p">);</span>
+  <span class="n">r</span> <span class="o">=</span> <span class="n">min</span><span class="p">((</span><span class="n">size_t</span><span class="p">)(</span><span class="n">pd</span> <span class="o">-</span> <span class="n">pc</span><span class="p">),</span> <span class="n">pn</span> <span class="o">-</span> <span class="n">pd</span> <span class="o">-</span> <span class="n">es</span><span class="p">);</span> <span class="c1">// 类似
+</span><span class="c1"></span>  <span class="n">vecswap</span><span class="p">(</span><span class="n">pb</span><span class="p">,</span> <span class="n">pn</span> <span class="o">-</span> <span class="n">r</span><span class="p">,</span> <span class="n">r</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">((</span><span class="n">r</span> <span class="o">=</span> <span class="n">pb</span> <span class="o">-</span> <span class="n">pa</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">es</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 如果前半部分有值且要排序的范围与前半部分有关联，那么排序
+</span><span class="c1"></span>    <span class="kt">void</span> <span class="o">*</span><span class="n">_l</span> <span class="o">=</span> <span class="n">a</span><span class="p">;</span>
+    <span class="kt">void</span> <span class="o">*</span><span class="n">_r</span> <span class="o">=</span> <span class="p">((</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">r</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">((</span><span class="n">lrange</span> <span class="o">&lt;</span> <span class="n">_l</span> <span class="o">&amp;&amp;</span> <span class="n">rrange</span> <span class="o">&lt;</span> <span class="n">_l</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="n">lrange</span> <span class="o">&gt;</span> <span class="n">_r</span> <span class="o">&amp;&amp;</span> <span class="n">rrange</span> <span class="o">&gt;</span> <span class="n">_r</span><span class="p">)))</span> <span class="p">{</span>
+      <span class="n">_pqsort</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">r</span> <span class="o">/</span> <span class="n">es</span><span class="p">,</span> <span class="n">es</span><span class="p">,</span> <span class="n">cmp</span><span class="p">,</span> <span class="n">lrange</span><span class="p">,</span> <span class="n">rrange</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">((</span><span class="n">r</span> <span class="o">=</span> <span class="n">pd</span> <span class="o">-</span> <span class="n">pc</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">es</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">void</span> <span class="o">*</span><span class="n">_l</span><span class="p">,</span> <span class="o">*</span><span class="n">_r</span><span class="p">;</span>
+
+    <span class="c1">// 如果后半部分有值且要排序的范围与后半部分有关联，那么排序
+</span><span class="c1"></span>    <span class="n">a</span> <span class="o">=</span> <span class="n">pn</span> <span class="o">-</span> <span class="n">r</span><span class="p">;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">es</span><span class="p">;</span>
+    <span class="n">_l</span> <span class="o">=</span> <span class="n">a</span><span class="p">;</span> <span class="c1">// 更新了要排序的容器的基地址
+</span><span class="c1"></span>    <span class="n">_r</span> <span class="o">=</span> <span class="p">((</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">a</span><span class="p">)</span><span class="o">+</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">((</span><span class="n">lrange</span> <span class="o">&lt;</span> <span class="n">_l</span> <span class="o">&amp;&amp;</span> <span class="n">rrange</span> <span class="o">&lt;</span> <span class="n">_l</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="n">lrange</span> <span class="o">&gt;</span> <span class="n">_r</span> <span class="o">&amp;&amp;</span> <span class="n">rrange</span> <span class="o">&gt;</span> <span class="n">_r</span><span class="p">)))</span> <span class="p">{</span>
+      <span class="c1">// 这里避免了一次递归来减少栈空间
+</span><span class="c1"></span>      <span class="k">goto</span> <span class="n">loop</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-24
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/algorithm/">algorithm</a>
+          <a href="/tags/what/">what</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/how_redis_work_set/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">集合的实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/how_redis_work_list/">
+            <span class="next-text nav-default">列表相关的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-24 14:34:03 \u002b0800 \u002b0800',
+        title: 'redis中pqsort的简单分析',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

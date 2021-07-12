@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>redis on blog</title>
+    <link>https://blog.er1c.dev/tags/redis/</link>
+    <description>Recent content in redis on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 11 Mar 2021 11:09:02 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/redis/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Redis Cluster练习</title>
+      <link>https://blog.er1c.dev/post/redis/cluster_use/</link>
+      <pubDate>Thu, 11 Mar 2021 11:09:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/cluster_use/</guid>
+      <description>&lt;p&gt;哇哦，终于可以学习、实践一下Redis Cluster了！&lt;/p&gt;
+&lt;p&gt;这一篇主要是简单的概念与集群搭建与简单操作。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis bio是什么与如何实现的</title>
+      <link>https://blog.er1c.dev/post/redis/bio/</link>
+      <pubDate>Tue, 09 Mar 2021 08:59:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/bio/</guid>
+      <description>&lt;p&gt;在看aof刷盘的代码时，
+发现异步刷盘是通过一个叫&lt;code&gt;bio&lt;/code&gt;的组件完成的。
+正好研究一下。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis AOF的实现</title>
+      <link>https://blog.er1c.dev/post/redis/aof/</link>
+      <pubDate>Tue, 02 Mar 2021 23:39:28 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/aof/</guid>
+      <description>&lt;p&gt;上一篇学习了RDB相关的实现，接下来就轮到AOF了。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis RDB的实现</title>
+      <link>https://blog.er1c.dev/post/redis/rdb/</link>
+      <pubDate>Sun, 07 Feb 2021 22:00:12 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/rdb/</guid>
+      <description>&lt;p&gt;&lt;em&gt;基于redis 6.0版本&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。&lt;/p&gt;
+&lt;p&gt;rdb是Redis Database Backup的缩写。&lt;/p&gt;
+&lt;p&gt;Redis Database Backup File是用来保存快照式的redis的数据的文件。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>哈希表的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_hash/</link>
+      <pubDate>Mon, 30 Nov 2020 21:52:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_hash/</guid>
+      <description>&lt;p&gt;redis哈希表相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>有序集合的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_sortedset/</link>
+      <pubDate>Sat, 28 Nov 2020 10:57:19 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_sortedset/</guid>
+      <description>&lt;p&gt;redis有序集合相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>集合的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_set/</link>
+      <pubDate>Thu, 26 Nov 2020 01:34:30 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_set/</guid>
+      <description>&lt;p&gt;redis集合相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis中pqsort的简单分析</title>
+      <link>https://blog.er1c.dev/post/redis/redis_pqsort/</link>
+      <pubDate>Tue, 24 Nov 2020 14:34:03 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/redis_pqsort/</guid>
+      <description>pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量</description>
+    </item>
+    
+    <item>
+      <title>列表相关的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_list/</link>
+      <pubDate>Sun, 22 Nov 2020 23:26:48 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_list/</guid>
+      <description>&lt;p&gt;redis列表相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>位图的基本实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_bitmap/</link>
+      <pubDate>Sun, 22 Nov 2020 00:27:36 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_bitmap/</guid>
+      <description>&lt;p&gt;redis位图相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis指令的实现-基础接口</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_common/</link>
+      <pubDate>Wed, 11 Nov 2020 20:21:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_common/</guid>
+      <description>&lt;p&gt;这里主要用来放置数据库接口等基础接口的简单分析。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis指令的实现-字符串</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_string/</link>
+      <pubDate>Wed, 11 Nov 2020 16:59:20 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_string/</guid>
+      <description>&lt;p&gt;redis字符串相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis的存储模型</title>
+      <link>https://blog.er1c.dev/post/redis/data_struct/</link>
+      <pubDate>Sun, 08 Nov 2020 00:14:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/data_struct/</guid>
+      <description>redis 6.0 redis在底层实现了若干数据结构： 简单动态字符串 双端链表 快速列表 哈希表 跳表 整数集合 压缩表 etc 但并不是直接使用这些数据结构构建系统，而是将</description>
+    </item>
+    
+    <item>
+      <title>redis处理请求的流程</title>
+      <link>https://blog.er1c.dev/post/redis/main_process/</link>
+      <pubDate>Tue, 03 Nov 2020 03:59:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/main_process/</guid>
+      <description>基于redis 4.0版本 出于学习的目的，简单记录下redis处理连接与请求的流程。 最后，简单介绍了6.0版本引入的多线程IO的实现方式。 接受</description>
+    </item>
+    
+    <item>
+      <title>redis的事件循环简单分析</title>
+      <link>https://blog.er1c.dev/post/redis/eventloop/</link>
+      <pubDate>Sun, 01 Nov 2020 19:30:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/eventloop/</guid>
+      <description>基于redis 4.0版本 redis使用了一个称为ae的事件框架来处理所有的事件，包含时间事件和文件事件。 出于学习的目的，记录下阅读源码的过程</description>
+    </item>
+    
+  </channel>
+</rss>

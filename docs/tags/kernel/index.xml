@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>kernel on blog</title>
+    <link>https://blog.er1c.dev/tags/kernel/</link>
+    <description>Recent content in kernel on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 15 Oct 2020 20:23:23 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/kernel/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>进程与调度</title>
+      <link>https://blog.er1c.dev/post/linux/process/</link>
+      <pubDate>Thu, 15 Oct 2020 20:23:23 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/process/</guid>
+      <description>进程是什么 是运行的二进制程序与其所拥有的资源集合。 是调度的被操作者。 task_struct 进程控制块，存储了进程的相关信息： task_struct definition 进程自己的信息 命名空间 内存 文件 信</description>
+    </item>
+    
+    <item>
+      <title>内存管理</title>
+      <link>https://blog.er1c.dev/post/linux/memory/</link>
+      <pubDate>Wed, 02 Sep 2020 02:27:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/memory/</guid>
+      <description>分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到</description>
+    </item>
+    
+    <item>
+      <title>中断与异常</title>
+      <link>https://blog.er1c.dev/post/linux/interrupt-and-exception/</link>
+      <pubDate>Sat, 29 Aug 2020 10:44:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/interrupt-and-exception/</guid>
+      <description>中断与异常的关系 刚开始看中断、异常相关的资料的时候，一直没有搞清楚两者的区别，导致一直是云里雾里、一头雾水，感觉资料怎么都是互相矛盾的啊。 其</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>内存管理 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/linux/memory/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="内存管理" />
+<meta property="og:description" content="分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/linux/memory/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-09-02T02:27:00&#43;08:00" />
+<meta property="article:modified_time" content="2020-09-02T02:27:00&#43;08:00" />
+
+<meta itemprop="name" content="内存管理">
+<meta itemprop="description" content="分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到"><meta itemprop="datePublished" content="2020-09-02T02:27:00&#43;08:00" />
+<meta itemprop="dateModified" content="2020-09-02T02:27:00&#43;08:00" />
+<meta itemprop="wordCount" content="2421">
+<meta itemprop="keywords" content="what,linux,kernel,memory," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="内存管理"/>
+<meta name="twitter:description" content="分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">内存管理</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-09-02 </span>
+        
+          <span class="more-meta"> 约 2421 字 </span>
+          <span class="more-meta"> 预计阅读 5 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分段与分页基础">分段与分页基础</a>
+      <ul>
+        <li><a href="#tlb">TLB</a></li>
+        <li><a href="#硬件高速缓存">硬件高速缓存</a></li>
+      </ul>
+    </li>
+    <li><a href="#linux中的分段">Linux中的分段</a>
+      <ul>
+        <li><a href="#gdt">GDT</a>
+          <ul>
+            <li><a href="#任务状态段-tss">任务状态段 TSS</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#linux中的分页">Linux中的分页</a></li>
+    <li><a href="#内存管理">内存管理</a>
+      <ul>
+        <li><a href="#物理内存的管理">物理内存的管理</a>
+          <ul>
+            <li><a href="#相关的数据结构">相关的数据结构</a></li>
+            <li><a href="#伙伴系统">伙伴系统</a></li>
+          </ul>
+        </li>
+        <li><a href="#内核内存管理">内核内存管理</a>
+          <ul>
+            <li><a href="#内核获取页">内核获取页</a></li>
+            <li><a href="#获取特定对象通过基于伙伴系统的slab系统实现">获取特定对象通过基于伙伴系统的slab系统实现</a></li>
+          </ul>
+        </li>
+        <li><a href="#用户空间内存管理">用户空间内存管理</a>
+          <ul>
+            <li><a href="#每个进程的控制块保存进程的线性地址使用情况">每个进程的控制块保存进程的线性地址使用情况</a></li>
+            <li><a href="#申请内存">申请内存</a></li>
+            <li><a href="#内存映射">内存映射</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <h1 id="分段与分页基础">分段与分页基础</h1>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+start
+:逻辑地址;
+note right
+在程序中使用的
+由一个段和偏移量组成
+end note
+partition 分段机制 {
+    :查询默认的或指定的段寄存器中的段选择子;
+    :根据选择子到GDT或LDT中查询对应的段描述符;
+    :获得段描述符中的基地址;
+    :将基地址与偏移量相加获得线性地址;
+}
+:线性地址(虚拟地址);
+partition 分页机制 {
+    :不同的处理器平台将线性地址划分成若干部分;
+    :包括若干指示目录项的部分，一个指示页表项的部分，和offset;
+    while (依次遍历目录各个部分)
+        :根据cr3寄存器或上一部分查询到的地址确定要查询的页目录表或页表;
+        :到上一步确定的页目录查询第{{线性地址该部分的值}}的项;
+    endwhile
+    :获得目标页表项所在的页表;
+    :到目标页表中查询第{{线性地址指示页表项部分的值}}项，就是目标页表项;
+    :获得页表项中的base地址，与线性地址中的offset部分组合，得到物理地址;
+}
+:物理地址;
+stop
+@enduml
+</code></pre><h2 id="tlb">TLB</h2>
+<p>Translation lookaside buffer</p>
+<p>用于缓存<strong>线性地址到物理地址</strong>的映射。</p>
+<p>每个CPU都有一个，由操作系统决定什么时候失效。</p>
+<h2 id="硬件高速缓存">硬件高速缓存</h2>
+<p>硬件高速缓存缓存了内存行，用于加速内存读写。</p>
+<p>常说的L1 Cache就是一种硬件高速缓存。</p>
+<p>每个CPU都有硬件高速缓存，<strong>各个CPU之间的同步由硬件处理</strong>。</p>
+<p>像其他的缓存一样，写入的时候有两种策略：</p>
+<ul>
+<li>write back</li>
+<li>write through</li>
+</ul>
+<h1 id="linux中的分段">Linux中的分段</h1>
+<p>分段机制只在x86架构的平台上存在，Linux简单的使用分段机制。</p>
+<p>Linux系统将逻辑地址与线性地址一一平铺的映射，即逻辑地址与线性地址是一致的。</p>
+<p>实现上，最常用的有四个段：</p>
+<ul>
+<li>用户数据段</li>
+<li>用户代码段</li>
+<li>内核数据段</li>
+<li>内核代码段</li>
+</ul>
+<p>其功能显然易见。</p>
+<p>四个段从线性地址0开始映射，故逻辑地址与线性地址一致。</p>
+<h2 id="gdt">GDT</h2>
+<p>Linux每个CPU有一个GDT，除了上述的四个段之外，有若干特殊功能的段以供使用。</p>
+<h3 id="任务状态段-tss">任务状态段 TSS</h3>
+<p>每个CPU核心有一个TSS，有两个目的：</p>
+<ol>
+<li>x86平台上，当从用户态切换到内核态时，CPU核心从TSS中获取并加载内核态堆栈。</li>
+<li>在用户态访问IO端口是，需要TSS中的IO许可权位图来做权限检查。</li>
+</ol>
+<h1 id="linux中的分页">Linux中的分页</h1>
+<p>Linux系统为兼容不同平台的分页机制，使用了四级分页模型：</p>
+<ul>
+<li>页全局目录</li>
+<li>页上级目录</li>
+<li>页下级目录</li>
+<li>页表</li>
+</ul>
+<p>故线性地址看起来应该是这样的：</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startdot
+digraph structs {
+    node [shape=record];
+    struct1 [label=&quot; 页全局目录 | 页上级目录 | 页下级目录 | 页表 | 偏移量&quot;];
+}
+@enddot
+</code></pre><h1 id="内存管理">内存管理</h1>
+<p>系统对于内存的管理，向上，为程序提供统一的内存视图。向下，管理不同的物理内存。</p>
+<ul>
+<li>
+<p>程序运行时看到的内存视图，均为虚拟地址的视图。系统为每个进程初始化相同的虚拟地址视图。
+系统将虚拟地址视图划分为两部分，高位为内核地址空间，低位为用户地址空间，通常，两者按照用户地址空间3:1划分。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startdot
+digraph structs {
+  node [shape=record];
+  struct1 [label=&quot;{{ 用户地址空间 | 内核地址空间 } | 低位 ~ 高位}&quot;];
+}
+@enddot
+</code></pre></li>
+<li>
+<p>系统处理各种的硬件上的不同。</p>
+</li>
+</ul>
+<h2 id="物理内存的管理">物理内存的管理</h2>
+<p>对于物理内存的管理，为处理一致内存访问与非一致内存访问，linux建立了<strong>节点-&gt;内存域-&gt;页</strong>的层级结构管理页帧。</p>
+<h3 id="相关的数据结构">相关的数据结构</h3>
+<ul>
+<li>节点描述符<code>pg_data_t</code> 处理一致内存访问与非一致内存访问。</li>
+<li>内存域描述符<code>zone</code> 每个内存节点中，因为DMA等原因，物理内存其实有若干不同区域，通过内存域来处理这种不同。</li>
+<li>页描述符<code>page</code> 每个物理页帧对应一个页描述符。</li>
+</ul>
+<h3 id="伙伴系统">伙伴系统</h3>
+<p>在使用自举内存管理器完成初始化后，系统的物理内存管理由伙伴系统接手。</p>
+<p>伙伴系统通过将内存按照2^n页（n称为阶）划分为若干固定大小的区域进行管理。
+分配时，通过二分较大的区域，来分配较小的内存需求。
+释放时，依次检查周围的区域是否能够组合成更大的（更大的阶）区域来适当的减少内存碎片。</p>
+<h2 id="内核内存管理">内核内存管理</h2>
+<p>内核地址空间划分为若干部分：物理内存直接映射区、vmalloc区、永久内核映射、固定映射。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startdot
+digraph structs {
+  node [shape=record];
+  struct1 [label=&quot;{{{ 物理内存直接映射区域 | +896MB } | { { vmalloc区 | 永久内核映射 | 固定映射 } | 高端内存 }} | 3GB ~ 4GB}&quot;];
+}
+@enddot
+</code></pre><p>内核有两种获取内存的需要，一种是直接获取页，另一种是获取特定的对象。</p>
+<h3 id="内核获取页">内核获取页</h3>
+<p>获取页的有若干前端，最终都基于伙伴系统获取实际的物理页框。</p>
+<p>内核将虚拟地址空间的高部分(通常为1/4)划为内核地址空间，用户态无法访问。</p>
+<p>对于直接获取页的情况，分为：</p>
+<ul>
+<li>直接映射到内核地址空间的物理页：分配好后可以直接通过线性地址使用。</li>
+<li>未直接映射到内核地址空间的物理页：首先通过伙伴系统获取页框，后使用映射，将页框映射到内核地址空间的映射区（vmalloc/永久内核映射/固定映射/临时映射）。</li>
+</ul>
+<h3 id="获取特定对象通过基于伙伴系统的slab系统实现">获取特定对象通过基于伙伴系统的slab系统实现</h3>
+<p>slab系统可以简单的理解为对象池。</p>
+<p>预先分配若干特定的对象，需要时申请，释放时归还。</p>
+<h2 id="用户空间内存管理">用户空间内存管理</h2>
+<pre><code class="language-plantuml" data-lang="plantuml">@startdot
+digraph structs {
+  node [shape=record];
+  structs [label=&quot;{ text 二进制代码段 | 低位 } | { 堆 | 向高位增长 ==\&gt; } | { mmap区域 用于各种映射 | \&lt;== 向低位增长 } | { 栈 | \&lt;==向低位增长 } | { 内核地址空间 | 高位 }&quot;];
+}
+@enddot
+</code></pre><h3 id="每个进程的控制块保存进程的线性地址使用情况">每个进程的控制块保存进程的线性地址使用情况</h3>
+<p>进程控制块<code>task_struct</code>包含一个<code>mm_struct</code>的结构，用于管理进程的内存使用情况。</p>
+<p><code>mm_struct</code>中包含一个线性地址从小到大排列的<code>vm_area_struct</code>链表，用于记录内存线性地址的使用情况。<code>vm_area_struct</code>实例同时维护在一个红黑树中。</p>
+<p>每个<code>vm_area_struct</code>实例表示一个连续的线性地址区间。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+task_struct o- mm_struct
+mm_struct o- vm_area_struct
+@enduml
+</code></pre><h3 id="申请内存">申请内存</h3>
+<p>用户空间的程序使用系统调用向内核申请内存（比如使用<code>brk()</code>系统调用调整堆的大小）：</p>
+<ol>
+<li>内核设置页表项但不实际分配内存。</li>
+<li>程序访问该页，引起一个缺页中断，进入中断处理程序。<a href="https://elixir.bootlin.com/linux/v2.6.24/source/arch/x86/mm/fault_64.c#L295">arch/x86/mm/fault_64.c#do_page_fault</a></li>
+<li>中断处理程序检查各种情况，若为延迟分配导致的，将最终基于slab分配相应的页<a href="https://elixir.bootlin.com/linux/v2.6.24/source/mm/memory.c#L2467">mm/memory.c#handle_pte_fault</a>，刷新缓存，从中断返回。</li>
+</ol>
+<h3 id="内存映射">内存映射</h3>
+<p>系统抽象了一个<code>address_space</code>对象，用于表示可以映射为地址的对象。</p>
+<p>举个例子，比如将硬盘上的文件映射到内存中，简化为两个地址空间的映射，大大减少了耦合。</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-09-02
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/what/">what</a>
+          <a href="/tags/linux/">linux</a>
+          <a href="/tags/kernel/">kernel</a>
+          <a href="/tags/memory/">memory</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/linux/process/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">进程与调度</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/linux/interrupt-and-exception/">
+            <span class="next-text nav-default">中断与异常</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-09-02 02:27:00 \u002b0800 \u002b0800',
+        title: '内存管理',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>distributed on blog</title>
+    <link>https://blog.er1c.dev/tags/distributed/</link>
+    <description>Recent content in distributed on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Mon, 05 Apr 2021 10:59:43 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/distributed/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CRDT简单原理</title>
+      <link>https://blog.er1c.dev/post/distuributed/crdt/</link>
+      <pubDate>Mon, 05 Apr 2021 10:59:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/distuributed/crdt/</guid>
+      <description>CRDT (Conflict-free Replicated Data Types) 是一种数据结构，能够在AP的情况下，提供数据的最终一致性。 对于CRDT有两种等价的描述，分别是基于状态描述(state-based</description>
+    </item>
+    
+  </channel>
+</rss>

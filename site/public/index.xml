@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>blog</title>
+    <link>https://blog.er1c.dev/</link>
+    <description>Recent content on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Mon, 12 Jul 2021 22:04:54 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Goland异常提示语法错误</title>
+      <link>https://blog.er1c.dev/post/daily_problems/goland_unexpected_syntax_error/</link>
+      <pubDate>Mon, 12 Jul 2021 22:04:54 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/daily_problems/goland_unexpected_syntax_error/</guid>
+      <description>有的时候语法是正确的， 但Goland仍然提示语法错误， 可以尝试「File」-&amp;gt;「Invalidate Caches」选项来移除缓存和索引</description>
+    </item>
+    
+    <item>
+      <title>Realme V15解锁bootloader并刷入TWRP</title>
+      <link>https://blog.er1c.dev/post/other/realme_v15_unlock_bl/</link>
+      <pubDate>Thu, 03 Jun 2021 00:39:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/other/realme_v15_unlock_bl/</guid>
+      <description>&lt;p&gt;昨日购入了一台realme v15，
+搜索了之后发现官方没有放出这个型号的解锁BL工具，
+一番尝试之后，
+幸运的解锁了BL，刷入TWRP。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;操作有风险，本文不保证正确性。&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>编译原理 第二章 笔记</title>
+      <link>https://blog.er1c.dev/post/compile/compilers/2/</link>
+      <pubDate>Mon, 31 May 2021 23:13:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/compile/compilers/2/</guid>
+      <description>&lt;p&gt;第二章通过实现一个将中序表达式转化为后续表达式的编译器，
+简单介绍了编译器前端实现需要的技术。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>编译原理 第一章 笔记</title>
+      <link>https://blog.er1c.dev/post/compile/compilers/1/</link>
+      <pubDate>Fri, 14 May 2021 16:54:42 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/compile/compilers/1/</guid>
+      <description>第一章介绍了将语言编译的整个流程与相关的工具集， 提出了若干概念。 系列列表 编译原理 第一章 笔记 编译原理 第二章 笔记 编译工具流 预处理器 编译器 汇编器 链</description>
+    </item>
+    
+    <item>
+      <title>go channel原理分析</title>
+      <link>https://blog.er1c.dev/post/language/go/chan/</link>
+      <pubDate>Tue, 11 May 2021 16:30:05 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/language/go/chan/</guid>
+      <description>&lt;p&gt;从功能出发，分析channel的原理。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>go内存模型与sync包</title>
+      <link>https://blog.er1c.dev/post/language/go/memory_model/</link>
+      <pubDate>Sat, 01 May 2021 03:06:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/language/go/memory_model/</guid>
+      <description>&lt;p&gt;go中的Happen-before保证与&lt;code&gt;sync&lt;/code&gt;包原理的简单分析。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>[吃太饱]diff3</title>
+      <link>https://blog.er1c.dev/post/eat_too_much/diff3/</link>
+      <pubDate>Fri, 16 Apr 2021 17:08:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/eat_too_much/diff3/</guid>
+      <description>&lt;p&gt;最近在尝试看一些理论的材料然后落地其中的设计。&lt;/p&gt;
+&lt;p&gt;这种事情属实费力（因为能力太差）还没有收益（已经有完美的落地方案了），
+所以打算开启一个新的系列——《吃太多》来记录学习经过。&lt;/p&gt;
+&lt;p&gt;通过这一篇可以了解到：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;diff3是什么&lt;/li&gt;
+&lt;li&gt;提供的保证和一些性质&lt;/li&gt;
+&lt;li&gt;一个简单的diff3实现&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+    <item>
+      <title>CRDT简单原理</title>
+      <link>https://blog.er1c.dev/post/distuributed/crdt/</link>
+      <pubDate>Mon, 05 Apr 2021 10:59:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/distuributed/crdt/</guid>
+      <description>CRDT (Conflict-free Replicated Data Types) 是一种数据结构，能够在AP的情况下，提供数据的最终一致性。 对于CRDT有两种等价的描述，分别是基于状态描述(state-based</description>
+    </item>
+    
+    <item>
+      <title>hugo的日常使用</title>
+      <link>https://blog.er1c.dev/post/memo/hugo/</link>
+      <pubDate>Tue, 30 Mar 2021 19:47:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/hugo/</guid>
+      <description>因为下划线导致latex公式渲染不正确/渲染成斜体 有些hugo的主题会带有latex的渲染插件， 这些插件通常用$作为行内公式的标记符。 公式中</description>
+    </item>
+    
+    <item>
+      <title>如何用脚本登录远程机器——expect用法</title>
+      <link>https://blog.er1c.dev/post/linux/expect/</link>
+      <pubDate>Tue, 16 Mar 2021 23:14:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/expect/</guid>
+      <description>&lt;p&gt;expect可以通过写命令来处理交互式的程序。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Redis Cluster练习</title>
+      <link>https://blog.er1c.dev/post/redis/cluster_use/</link>
+      <pubDate>Thu, 11 Mar 2021 11:09:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/cluster_use/</guid>
+      <description>&lt;p&gt;哇哦，终于可以学习、实践一下Redis Cluster了！&lt;/p&gt;
+&lt;p&gt;这一篇主要是简单的概念与集群搭建与简单操作。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis bio是什么与如何实现的</title>
+      <link>https://blog.er1c.dev/post/redis/bio/</link>
+      <pubDate>Tue, 09 Mar 2021 08:59:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/bio/</guid>
+      <description>&lt;p&gt;在看aof刷盘的代码时，
+发现异步刷盘是通过一个叫&lt;code&gt;bio&lt;/code&gt;的组件完成的。
+正好研究一下。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis AOF的实现</title>
+      <link>https://blog.er1c.dev/post/redis/aof/</link>
+      <pubDate>Tue, 02 Mar 2021 23:39:28 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/aof/</guid>
+      <description>&lt;p&gt;上一篇学习了RDB相关的实现，接下来就轮到AOF了。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis RDB的实现</title>
+      <link>https://blog.er1c.dev/post/redis/rdb/</link>
+      <pubDate>Sun, 07 Feb 2021 22:00:12 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/rdb/</guid>
+      <description>&lt;p&gt;&lt;em&gt;基于redis 6.0版本&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。&lt;/p&gt;
+&lt;p&gt;rdb是Redis Database Backup的缩写。&lt;/p&gt;
+&lt;p&gt;Redis Database Backup File是用来保存快照式的redis的数据的文件。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>[有趣事情的发生]携程apollo配置更新推送的实现</title>
+      <link>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</link>
+      <pubDate>Thu, 21 Jan 2021 20:04:39 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</guid>
+      <description>&lt;p&gt;最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。&lt;/p&gt;
+&lt;p&gt;看过redis的实现之后感觉阅读源码变得容易了一些。&lt;/p&gt;
+&lt;p&gt;看了一些项目之后发现有些遗忘了，&lt;del&gt;在兄弟的鼓励下意识到&lt;/del&gt; 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。&lt;/p&gt;
+&lt;p&gt;这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;希望能够坚持下去。&lt;/em&gt;&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>学习Websocket</title>
+      <link>https://blog.er1c.dev/post/http/websocket/</link>
+      <pubDate>Mon, 30 Nov 2020 23:05:21 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/http/websocket/</guid>
+      <description>之前没有机会用到websocket，也没有认真的了解过， 新的工作里看起来经常会用到，所以简单的了解一下协议的一些细节，以及一些实践。 webs</description>
+    </item>
+    
+    <item>
+      <title>哈希表的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_hash/</link>
+      <pubDate>Mon, 30 Nov 2020 21:52:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_hash/</guid>
+      <description>&lt;p&gt;redis哈希表相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>有序集合的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_sortedset/</link>
+      <pubDate>Sat, 28 Nov 2020 10:57:19 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_sortedset/</guid>
+      <description>&lt;p&gt;redis有序集合相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>集合的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_set/</link>
+      <pubDate>Thu, 26 Nov 2020 01:34:30 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_set/</guid>
+      <description>&lt;p&gt;redis集合相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis中pqsort的简单分析</title>
+      <link>https://blog.er1c.dev/post/redis/redis_pqsort/</link>
+      <pubDate>Tue, 24 Nov 2020 14:34:03 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/redis_pqsort/</guid>
+      <description>pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量</description>
+    </item>
+    
+    <item>
+      <title>列表相关的实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_list/</link>
+      <pubDate>Sun, 22 Nov 2020 23:26:48 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_list/</guid>
+      <description>&lt;p&gt;redis列表相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>基础知识备忘</title>
+      <link>https://blog.er1c.dev/post/memo/abc/</link>
+      <pubDate>Sun, 22 Nov 2020 23:14:59 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/abc/</guid>
+      <description>字节序 大端：数据的高字节放在低地址 网络序 小端：数据的高字节放在高地址</description>
+    </item>
+    
+    <item>
+      <title>缩写备忘录</title>
+      <link>https://blog.er1c.dev/post/memo/abbr/</link>
+      <pubDate>Sun, 22 Nov 2020 23:13:13 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/abbr/</guid>
+      <description>MSB Most Significant Bit 最高位 WAL Write Ahead Log 预写日志 MVP minimum viable product 最小可用产品。指一种产品版本，只实现必要的功能。</description>
+    </item>
+    
+    <item>
+      <title>位图的基本实现</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_bitmap/</link>
+      <pubDate>Sun, 22 Nov 2020 00:27:36 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_bitmap/</guid>
+      <description>&lt;p&gt;redis位图相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis指令的实现-基础接口</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_common/</link>
+      <pubDate>Wed, 11 Nov 2020 20:21:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_common/</guid>
+      <description>&lt;p&gt;这里主要用来放置数据库接口等基础接口的简单分析。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis指令的实现-字符串</title>
+      <link>https://blog.er1c.dev/post/redis/how_redis_work_string/</link>
+      <pubDate>Wed, 11 Nov 2020 16:59:20 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/how_redis_work_string/</guid>
+      <description>&lt;p&gt;redis字符串相关指令的具体实现。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis的存储模型</title>
+      <link>https://blog.er1c.dev/post/redis/data_struct/</link>
+      <pubDate>Sun, 08 Nov 2020 00:14:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/data_struct/</guid>
+      <description>redis 6.0 redis在底层实现了若干数据结构： 简单动态字符串 双端链表 快速列表 哈希表 跳表 整数集合 压缩表 etc 但并不是直接使用这些数据结构构建系统，而是将</description>
+    </item>
+    
+    <item>
+      <title>redis处理请求的流程</title>
+      <link>https://blog.er1c.dev/post/redis/main_process/</link>
+      <pubDate>Tue, 03 Nov 2020 03:59:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/main_process/</guid>
+      <description>基于redis 4.0版本 出于学习的目的，简单记录下redis处理连接与请求的流程。 最后，简单介绍了6.0版本引入的多线程IO的实现方式。 接受</description>
+    </item>
+    
+    <item>
+      <title>redis的事件循环简单分析</title>
+      <link>https://blog.er1c.dev/post/redis/eventloop/</link>
+      <pubDate>Sun, 01 Nov 2020 19:30:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/eventloop/</guid>
+      <description>基于redis 4.0版本 redis使用了一个称为ae的事件框架来处理所有的事件，包含时间事件和文件事件。 出于学习的目的，记录下阅读源码的过程</description>
+    </item>
+    
+    <item>
+      <title>MySQL相关备忘录</title>
+      <link>https://blog.er1c.dev/post/memo/mysql/</link>
+      <pubDate>Wed, 28 Oct 2020 19:02:37 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/mysql/</guid>
+      <description>如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6 启动mysql失败的时候如何排查？ 如何在Ubuntu 20上使用apt安装低版本m</description>
+    </item>
+    
+    <item>
+      <title>MySQL各种情况的加锁分析</title>
+      <link>https://blog.er1c.dev/post/mysql/lock_analysis/</link>
+      <pubDate>Tue, 27 Oct 2020 02:46:48 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/mysql/lock_analysis/</guid>
+      <description>首先介绍了事务与隔离级别，引入了加锁的复杂性以及InnoDB的锁类型。最后对于各种索引、数据的加锁情况进行了相应的分析。 加锁是为了数据库能够</description>
+    </item>
+    
+    <item>
+      <title>进程与调度</title>
+      <link>https://blog.er1c.dev/post/linux/process/</link>
+      <pubDate>Thu, 15 Oct 2020 20:23:23 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/process/</guid>
+      <description>进程是什么 是运行的二进制程序与其所拥有的资源集合。 是调度的被操作者。 task_struct 进程控制块，存储了进程的相关信息： task_struct definition 进程自己的信息 命名空间 内存 文件 信</description>
+    </item>
+    
+    <item>
+      <title>内存管理</title>
+      <link>https://blog.er1c.dev/post/linux/memory/</link>
+      <pubDate>Wed, 02 Sep 2020 02:27:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/memory/</guid>
+      <description>分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到</description>
+    </item>
+    
+    <item>
+      <title>中断与异常</title>
+      <link>https://blog.er1c.dev/post/linux/interrupt-and-exception/</link>
+      <pubDate>Sat, 29 Aug 2020 10:44:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/interrupt-and-exception/</guid>
+      <description>中断与异常的关系 刚开始看中断、异常相关的资料的时候，一直没有搞清楚两者的区别，导致一直是云里雾里、一头雾水，感觉资料怎么都是互相矛盾的啊。 其</description>
+    </item>
+    
+    <item>
+      <title>HTTP的安全机制</title>
+      <link>https://blog.er1c.dev/post/http/what-is-http-security/</link>
+      <pubDate>Fri, 21 Aug 2020 23:17:27 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/http/what-is-http-security/</guid>
+      <description>最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。 对HTTP又有了一些新的理解 并深深的自我怀疑我真的了解HTTP吗？ 。 HTTP的</description>
+    </item>
+    
+    <item>
+      <title>备忘录</title>
+      <link>https://blog.er1c.dev/memo/</link>
+      <pubDate>Fri, 21 Aug 2020 22:31:07 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/memo/</guid>
+      <description>网站 正则表达式在线检查 Nginx在线检查 图书 MDN PlantUML Linux源码在线查看 在线文档 Linux syscalls.h 各种备忘集合 正则表达式速查 缩写 基础知识</description>
+    </item>
+    
+    <item>
+      <title>正则表达式速查</title>
+      <link>https://blog.er1c.dev/post/memo/regex/</link>
+      <pubDate>Fri, 21 Aug 2020 20:31:59 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/regex/</guid>
+      <description>基础 元字符 \b 匹配单词分割处 . 匹配非换行符所有字符 \w 匹配文字字符 \s 空白字符 \d 数字 ^ 开头 $ 结尾 转义 使用 \ 进行转义 重复 均指重复之前一个组或字符类或</description>
+    </item>
+    
+    <item>
+      <title>About Me</title>
+      <link>https://blog.er1c.dev/about-me/</link>
+      <pubDate>Tue, 18 Aug 2020 22:35:15 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/about-me/</guid>
+      <description>About Me A coder.</description>
+    </item>
+    
+    <item>
+      <title>如何从线上机器拉取数据</title>
+      <link>https://blog.er1c.dev/post/linux/nc_and_pv/</link>
+      <pubDate>Tue, 18 Aug 2020 22:34:28 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/nc_and_pv/</guid>
+      <description>如何从线上机器拉取数据 最近遇到了一些线上问题，希望能够把线上抓到的信息拉到本地处理。 实现的方式有很多，比如利用python开启一个http s</description>
+    </item>
+    
+  </channel>
+</rss>

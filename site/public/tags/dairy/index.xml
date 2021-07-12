@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>dairy on blog</title>
+    <link>https://blog.er1c.dev/tags/dairy/</link>
+    <description>Recent content in dairy on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 18 Aug 2020 22:35:15 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/dairy/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>About Me</title>
+      <link>https://blog.er1c.dev/about-me/</link>
+      <pubDate>Tue, 18 Aug 2020 22:35:15 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/about-me/</guid>
+      <description>About Me A coder.</description>
+    </item>
+    
+  </channel>
+</rss>

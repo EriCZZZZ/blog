@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>command on blog</title>
+    <link>https://blog.er1c.dev/tags/command/</link>
+    <description>Recent content in command on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 16 Mar 2021 23:14:06 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/command/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>如何用脚本登录远程机器——expect用法</title>
+      <link>https://blog.er1c.dev/post/linux/expect/</link>
+      <pubDate>Tue, 16 Mar 2021 23:14:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/expect/</guid>
+      <description>&lt;p&gt;expect可以通过写命令来处理交互式的程序。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>如何从线上机器拉取数据</title>
+      <link>https://blog.er1c.dev/post/linux/nc_and_pv/</link>
+      <pubDate>Tue, 18 Aug 2020 22:34:28 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/nc_and_pv/</guid>
+      <description>如何从线上机器拉取数据 最近遇到了一些线上问题，希望能够把线上抓到的信息拉到本地处理。 实现的方式有很多，比如利用python开启一个http s</description>
+    </item>
+    
+  </channel>
+</rss>

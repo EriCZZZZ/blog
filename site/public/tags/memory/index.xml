@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>memory on blog</title>
+    <link>https://blog.er1c.dev/tags/memory/</link>
+    <description>Recent content in memory on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 02 Sep 2020 02:27:00 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/memory/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>内存管理</title>
+      <link>https://blog.er1c.dev/post/linux/memory/</link>
+      <pubDate>Wed, 02 Sep 2020 02:27:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/memory/</guid>
+      <description>分段与分页基础 @startuml start :逻辑地址; note right 在程序中使用的 由一个段和偏移量组成 end note partition 分段机制 { :查询默认的或指定的段寄存器中的段选择子; :根据选择子到</description>
+    </item>
+    
+  </channel>
+</rss>

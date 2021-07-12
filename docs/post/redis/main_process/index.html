@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>redis处理请求的流程 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="基于redis 4.0版本 出于学习的目的，简单记录下redis处理连接与请求的流程。 最后，简单介绍了6.0版本引入的多线程IO的实现方式。 接受" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/main_process/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="redis处理请求的流程" />
+<meta property="og:description" content="基于redis 4.0版本 出于学习的目的，简单记录下redis处理连接与请求的流程。 最后，简单介绍了6.0版本引入的多线程IO的实现方式。 接受" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/main_process/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-03T03:59:02&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-03T03:59:02&#43;08:00" />
+
+<meta itemprop="name" content="redis处理请求的流程">
+<meta itemprop="description" content="基于redis 4.0版本 出于学习的目的，简单记录下redis处理连接与请求的流程。 最后，简单介绍了6.0版本引入的多线程IO的实现方式。 接受"><meta itemprop="datePublished" content="2020-11-03T03:59:02&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-03T03:59:02&#43;08:00" />
+<meta itemprop="wordCount" content="2180">
+<meta itemprop="keywords" content="redis,what," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="redis处理请求的流程"/>
+<meta name="twitter:description" content="基于redis 4.0版本 出于学习的目的，简单记录下redis处理连接与请求的流程。 最后，简单介绍了6.0版本引入的多线程IO的实现方式。 接受"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">redis处理请求的流程</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-03 </span>
+        
+          <span class="more-meta"> 约 2180 字 </span>
+          <span class="more-meta"> 预计阅读 5 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#接受链接">接受链接</a></li>
+    <li><a href="#读取请求">读取请求</a></li>
+    <li><a href="#分析请求">分析请求</a></li>
+    <li><a href="#进行各个指令的操作">进行各个指令的操作</a>
+      <ul>
+        <li><a href="#rediscomand"><code>redisComand</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#返回结果">返回结果</a></li>
+    <li><a href="#redis-60引入的并发io的简单介绍">redis 6.0引入的并发IO的简单介绍</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p><em>基于redis 4.0版本</em></p>
+<p>出于学习的目的，简单记录下redis处理连接与请求的流程。</p>
+<p>最后，简单介绍了6.0版本引入的多线程IO的实现方式。</p>
+<h1 id="接受链接">接受链接</h1>
+<p>redis使用一个简单的事件驱动框架（以下简称框架，之前的文章有对于该框架的简单分析）来监听服务端链接的事件。</p>
+<p>首先在初始化服务器的时候，监听对应的地址。</p>
+<p>然后向框架注册对应的事件和处理函数<code>acceptTcpHandler</code>。在有新的链接到达时，框架会调用该方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// server.c
+</span><span class="c1"></span><span class="kt">void</span> <span class="nf">initServer</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// ...
+</span><span class="c1"></span>  <span class="cm">/* Open the TCP listening socket for the user commands. */</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">port</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span>
+    <span class="n">listenToPort</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">port</span><span class="p">,</span><span class="n">server</span><span class="p">.</span><span class="n">ipfd</span><span class="p">,</span><span class="o">&amp;</span><span class="n">server</span><span class="p">.</span><span class="n">ipfd_count</span><span class="p">)</span> <span class="o">==</span> <span class="n">C_ERR</span><span class="p">)</span>
+    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+  <span class="c1">// ...
+</span><span class="c1"></span>
+  <span class="cm">/* Create an event handler for accepting new connections in TCP and Unix
+</span><span class="cm">   * domain sockets. */</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">server</span><span class="p">.</span><span class="n">ipfd_count</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">aeCreateFileEvent</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">el</span><span class="p">,</span> <span class="n">server</span><span class="p">.</span><span class="n">ipfd</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">AE_READABLE</span><span class="p">,</span>
+          <span class="n">acceptTcpHandler</span><span class="p">,</span><span class="nb">NULL</span><span class="p">)</span> <span class="o">==</span> <span class="n">AE_ERR</span><span class="p">)</span>
+          <span class="p">{</span>
+              <span class="n">serverPanic</span><span class="p">(</span>
+                  <span class="s">&#34;Unrecoverable error creating server.ipfd file event.&#34;</span><span class="p">);</span>
+          <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><code>acceptTcpHandler</code>中调用若干方法，最终使用<code>accept</code>接受链接。然后将控制权交给<code>acceptCommonHandler</code>方法。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/networking.c
+</span><span class="c1"></span><span class="kt">void</span> <span class="nf">acceptTcpHandler</span><span class="p">(</span><span class="n">aeEventLoop</span> <span class="o">*</span><span class="n">el</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">privdata</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mask</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">cport</span><span class="p">,</span> <span class="n">cfd</span><span class="p">,</span> <span class="n">max</span> <span class="o">=</span> <span class="n">MAX_ACCEPTS_PER_CALL</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">cip</span><span class="p">[</span><span class="n">NET_IP_STR_LEN</span><span class="p">];</span>
+    <span class="n">UNUSED</span><span class="p">(</span><span class="n">el</span><span class="p">);</span>
+    <span class="n">UNUSED</span><span class="p">(</span><span class="n">mask</span><span class="p">);</span>
+    <span class="n">UNUSED</span><span class="p">(</span><span class="n">privdata</span><span class="p">);</span>
+
+    <span class="k">while</span><span class="p">(</span><span class="n">max</span><span class="o">--</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cfd</span> <span class="o">=</span> <span class="n">anetTcpAccept</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">neterr</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="n">cip</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">cip</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">cport</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">cfd</span> <span class="o">==</span> <span class="n">ANET_ERR</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">EWOULDBLOCK</span><span class="p">)</span>
+                <span class="n">serverLog</span><span class="p">(</span><span class="n">LL_WARNING</span><span class="p">,</span>
+                    <span class="s">&#34;Accepting client connection: %s&#34;</span><span class="p">,</span> <span class="n">server</span><span class="p">.</span><span class="n">neterr</span><span class="p">);</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="n">serverLog</span><span class="p">(</span><span class="n">LL_VERBOSE</span><span class="p">,</span><span class="s">&#34;Accepted %s:%d&#34;</span><span class="p">,</span> <span class="n">cip</span><span class="p">,</span> <span class="n">cport</span><span class="p">);</span>
+        <span class="n">acceptCommonHandler</span><span class="p">(</span><span class="n">cfd</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">cip</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><code>acceptCommonHandler</code>中调用<code>createClient</code>处理业务逻辑，并记录若干统计数据和进行安全检查。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/networking.c
+</span><span class="c1"></span><span class="k">static</span> <span class="kt">void</span> <span class="nf">acceptCommonHandler</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">ip</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">((</span><span class="n">c</span> <span class="o">=</span> <span class="n">createClient</span><span class="p">(</span><span class="n">fd</span><span class="p">))</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// ...
+</span><span class="c1"></span>    <span class="p">}</span>
+    <span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><code>createClient</code>设置链接的属性，将处理函数与fd注册到框架中，最后构建<code>client</code>对象。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/networking.c
+</span><span class="c1"></span><span class="n">client</span> <span class="o">*</span><span class="nf">createClient</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">client</span> <span class="o">*</span><span class="n">c</span> <span class="o">=</span> <span class="n">zmalloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">client</span><span class="p">));</span> <span class="c1">// 分配内存
+</span><span class="c1"></span>
+    <span class="c1">// ...
+</span><span class="c1"></span>    <span class="n">anetNonBlock</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="n">fd</span><span class="p">);</span> <span class="c1">// 设置socket为非阻塞模式
+</span><span class="c1"></span>    <span class="n">anetEnableTcpNoDelay</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="n">fd</span><span class="p">);</span> <span class="c1">// 设置TCP_NODELAY，减少小包的延迟
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">tcpkeepalive</span><span class="p">)</span>
+        <span class="n">anetKeepAlive</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="n">fd</span><span class="p">,</span><span class="n">server</span><span class="p">.</span><span class="n">tcpkeepalive</span><span class="p">);</span> <span class="c1">// 设置长链接
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">aeCreateFileEvent</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">el</span><span class="p">,</span><span class="n">fd</span><span class="p">,</span><span class="n">AE_READABLE</span><span class="p">,</span>
+        <span class="n">readQueryFromClient</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="n">AE_ERR</span><span class="p">)</span> <span class="c1">// 注册事件
+</span><span class="c1"></span>    <span class="p">{</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>    <span class="p">}</span>
+    <span class="c1">// ... 进行了一些初始化客户端的操作
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="读取请求">读取请求</h1>
+<p><code>readQueryFromClient</code>根据<code>client-&gt;reqtype</code>，使用不同方式处理单行命令(PROTO_REQ_INLINE)和一组命令(PROTO_REQ_MULTIBULK)。
+随后将程序交给<code>processInputBuffer</code>，执行后续的操作。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/networking.c
+</span><span class="c1"></span><span class="kt">void</span> <span class="nf">readQueryFromClient</span><span class="p">(</span><span class="n">aeEventLoop</span> <span class="o">*</span><span class="n">el</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">privdata</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mask</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// ...
+</span><span class="c1"></span>  <span class="n">readlen</span> <span class="o">=</span> <span class="n">PROTO_IOBUF_LEN</span><span class="p">;</span> <span class="c1">// 需要读取的数量
+</span><span class="c1"></span>  <span class="c1">// ...
+</span><span class="c1"></span>  <span class="n">c</span><span class="o">-&gt;</span><span class="n">querybuf</span> <span class="o">=</span> <span class="n">sdsMakeRoomFor</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">querybuf</span><span class="p">,</span> <span class="n">readlen</span><span class="p">);</span> <span class="c1">// 修改querybuf的长度，流出空间。
+</span><span class="c1"></span>  <span class="n">nread</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">querybuf</span><span class="o">+</span><span class="n">qblen</span><span class="p">,</span> <span class="n">readlen</span><span class="p">);</span> <span class="c1">// 读取数据到查询指令缓冲区
+</span><span class="c1"></span>  <span class="c1">// ...
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">CLIENT_MASTER</span><span class="p">))</span> <span class="p">{</span>
+        <span class="c1">// 如果是普通的客户端（区分于主从复制的的master服务器），只需要处理即可
+</span><span class="c1"></span>        <span class="n">processInputBuffer</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// 请求是主从复制的主发送过来的
+</span><span class="c1"></span>        <span class="n">size_t</span> <span class="n">prev_offset</span> <span class="o">=</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">reploff</span><span class="p">;</span>
+        <span class="n">processInputBuffer</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+        <span class="n">size_t</span> <span class="n">applied</span> <span class="o">=</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">reploff</span> <span class="o">-</span> <span class="n">prev_offset</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">applied</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// 如果应用了主推送过来的变化，那么把变化发送给自己的从。
+</span><span class="c1"></span>            <span class="n">replicationFeedSlavesFromMasterStream</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">slaves</span><span class="p">,</span>
+                    <span class="n">c</span><span class="o">-&gt;</span><span class="n">pending_querybuf</span><span class="p">,</span> <span class="n">applied</span><span class="p">);</span>
+            <span class="n">sdsrange</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">pending_querybuf</span><span class="p">,</span><span class="n">applied</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="分析请求">分析请求</h1>
+<p><code>processInputBuffer</code>根据不同的类型请求，调用<code>processInlineBuffer</code>或<code>processMultibulkBuffer</code>解析参数。随后调用<code>processCommand</code>执行请求。</p>
+<h1 id="进行各个指令的操作">进行各个指令的操作</h1>
+<p><code>processCommand</code>通过<code>call</code>调用每个指令在指令表中的处理函数来进行指令的具体操作。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/server.c#127
+</span><span class="c1">// 指令表
+</span><span class="c1"></span><span class="k">struct</span> <span class="n">redisCommand</span> <span class="n">redisCommandTable</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">{</span><span class="s">&#34;module&#34;</span><span class="p">,</span><span class="n">moduleCommand</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="s">&#34;as&#34;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="nb">NULL</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">},</span>
+    <span class="p">{</span><span class="s">&#34;get&#34;</span><span class="p">,</span><span class="n">getCommand</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="s">&#34;rF&#34;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="nb">NULL</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">},</span>
+    <span class="p">{</span><span class="s">&#34;set&#34;</span><span class="p">,</span><span class="n">setCommand</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="s">&#34;wm&#34;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="nb">NULL</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">},</span>
+    <span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="rediscomand"><code>redisComand</code></h2>
+<p>每个指令都有一个<code>redisCommand</code>实例，来表明如何执行该指令。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/server.h#1500
+</span><span class="c1"></span><span class="k">struct</span> <span class="n">redisCommand</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span> <span class="c1">// 指令的名称
+</span><span class="c1"></span>    <span class="n">redisCommandProc</span> <span class="o">*</span><span class="n">proc</span><span class="p">;</span> <span class="c1">// 具体的执行函数
+</span><span class="c1"></span>    <span class="kt">int</span> <span class="n">arity</span><span class="p">;</span> <span class="c1">// 参数个数 负数表示不少于对应的个数
+</span><span class="c1"></span>    <span class="kt">char</span> <span class="o">*</span><span class="n">sflags</span><span class="p">;</span>   <span class="cm">/* 字符串形式的标记 */</span>
+    <span class="kt">uint64_t</span> <span class="n">flags</span><span class="p">;</span> <span class="cm">/* 由sflags计算来的数字形式的标记 */</span>
+    <span class="cm">/* Use a function to determine keys arguments in a command line.
+</span><span class="cm">     * Used for Redis Cluster redirect. */</span>
+    <span class="n">redisGetKeysProc</span> <span class="o">*</span><span class="n">getkeys_proc</span><span class="p">;</span> <span class="c1">// 用于从指令中提取出所有的键，用于集群的转发
+</span><span class="c1"></span>                                    <span class="c1">// 只有当下面三个参数无法确定键时才会被使用
+</span><span class="c1"></span>    <span class="cm">/* What keys should be loaded in background when calling this command? */</span>
+    <span class="c1">// 那些键值对需要在后台加载
+</span><span class="c1"></span>    <span class="kt">int</span> <span class="n">firstkey</span><span class="p">;</span> <span class="cm">/* 第一个作为key的参数的位置 */</span>
+    <span class="kt">int</span> <span class="n">lastkey</span><span class="p">;</span>  <span class="cm">/* 最后一个作为key的参数的位置 */</span>
+    <span class="kt">int</span> <span class="n">keystep</span><span class="p">;</span>  <span class="cm">/* 每个key之间的间隔 */</span>
+    <span class="kt">long</span> <span class="kt">long</span> <span class="n">microseconds</span><span class="p">,</span> <span class="n">calls</span><span class="p">;</span> <span class="c1">// microseconds 执行这个指令所耗费的总时间
+</span><span class="c1"></span>                                   <span class="c1">// calls 统计数据，对这个指令调用的次数
+</span><span class="c1"></span>    <span class="kt">int</span> <span class="n">id</span><span class="p">;</span>     <span class="cm">/* 指令的id 用于ACL检查或其他因素 */</span>
+<span class="p">};</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="返回结果">返回结果</h1>
+<p>对于不同的执行路径，最终都使用类似<code>addReply</code>的方法添加结果到输出缓冲区。</p>
+<p>每次事件循环的中间，都会调用的<code>beforeSleep</code>方法中的<code>handleClientsWithPendingWrites</code>方法会处理有等待输出的client。</p>
+<ol>
+<li>首先调用<code>writeToClient</code>方法，尝试同步写入。</li>
+<li>如果写入成功之后，检查发现还是有数据需要写入（比如是达到了写入限制<code>NET_MAX_WRITES_PER_EVENT</code>），那么就向事务框架中注册<code>AE_WRITABLE</code>事件和处理函数<code>sendReplyToClient</code>，最终会再次调用<code>writeToClient</code>尝试写入结果。</li>
+</ol>
+<h1 id="redis-60引入的并发io的简单介绍">redis 6.0引入的并发IO的简单介绍</h1>
+<p>在读请求的时候，<code>readQueryFromClient</code>引入一个方法<code>postponeClientRead</code>检查是否进行异步读。</p>
+<p>在异步读开启时，会将该延迟读加到<code>redisSever.clients_pending_read</code>链表中。</p>
+<p>每次事件循环间隙，会调用<code>handleClientsWithPendingReadsUsingThreads</code>方法 <em>（src/server.c#2136）</em>，将需要进行读取的请求，分发给每个IO线程。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">handleClientsWithPendingReadsUsingThreads</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...
+</span><span class="c1"></span>    <span class="k">while</span><span class="p">((</span><span class="n">ln</span> <span class="o">=</span> <span class="n">listNext</span><span class="p">(</span><span class="o">&amp;</span><span class="n">li</span><span class="p">)))</span> <span class="p">{</span>
+        <span class="n">client</span> <span class="o">*</span><span class="n">c</span> <span class="o">=</span> <span class="n">listNodeValue</span><span class="p">(</span><span class="n">ln</span><span class="p">);</span>
+        <span class="kt">int</span> <span class="n">target_id</span> <span class="o">=</span> <span class="n">item_id</span> <span class="o">%</span> <span class="n">server</span><span class="p">.</span><span class="n">io_threads_num</span><span class="p">;</span> <span class="c1">// 保证均匀的分发，这里是单线程的处理，无需加锁。
+</span><span class="c1"></span>        <span class="n">listAddNodeTail</span><span class="p">(</span><span class="n">io_threads_list</span><span class="p">[</span><span class="n">target_id</span><span class="p">],</span><span class="n">c</span><span class="p">);</span>
+        <span class="n">item_id</span><span class="o">++</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>写请求也是类似的处理方式，具体的处理方法是<code>handleClientsWithPendingWritesUsingThreads</code>。</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-03
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/data_struct/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis的存储模型</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/eventloop/">
+            <span class="next-text nav-default">redis的事件循环简单分析</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-03 03:59:02 \u002b0800 \u002b0800',
+        title: 'redis处理请求的流程',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

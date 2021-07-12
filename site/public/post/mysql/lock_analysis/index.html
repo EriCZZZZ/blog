@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>MySQL各种情况的加锁分析 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="首先介绍了事务与隔离级别，引入了加锁的复杂性以及InnoDB的锁类型。最后对于各种索引、数据的加锁情况进行了相应的分析。 加锁是为了数据库能够" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/mysql/lock_analysis/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="MySQL各种情况的加锁分析" />
+<meta property="og:description" content="首先介绍了事务与隔离级别，引入了加锁的复杂性以及InnoDB的锁类型。最后对于各种索引、数据的加锁情况进行了相应的分析。 加锁是为了数据库能够" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/mysql/lock_analysis/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-10-27T02:46:48&#43;08:00" />
+<meta property="article:modified_time" content="2020-10-27T02:46:48&#43;08:00" />
+
+<meta itemprop="name" content="MySQL各种情况的加锁分析">
+<meta itemprop="description" content="首先介绍了事务与隔离级别，引入了加锁的复杂性以及InnoDB的锁类型。最后对于各种索引、数据的加锁情况进行了相应的分析。 加锁是为了数据库能够"><meta itemprop="datePublished" content="2020-10-27T02:46:48&#43;08:00" />
+<meta itemprop="dateModified" content="2020-10-27T02:46:48&#43;08:00" />
+<meta itemprop="wordCount" content="3413">
+<meta itemprop="keywords" content="MySQL," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MySQL各种情况的加锁分析"/>
+<meta name="twitter:description" content="首先介绍了事务与隔离级别，引入了加锁的复杂性以及InnoDB的锁类型。最后对于各种索引、数据的加锁情况进行了相应的分析。 加锁是为了数据库能够"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">MySQL各种情况的加锁分析</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-10-27 </span>
+        
+          <span class="more-meta"> 约 3413 字 </span>
+          <span class="more-meta"> 预计阅读 7 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#加锁是为了数据库能够在并发下正确运行">加锁是为了数据库能够在并发下正确运行</a>
+      <ul>
+        <li><a href="#四个隔离级别">四个隔离级别</a>
+          <ul>
+            <li><a href="#read-uncommited-可能读到未提交的事务">READ UNCOMMITED （可能）读到未提交的事务</a></li>
+            <li><a href="#read-committed-只能读到已经提交的事务">READ COMMITTED 只能读到已经提交的事务</a></li>
+            <li><a href="#repeatable-read-可重复读-mysql的默认隔离级别">REPEATABLE READ 可重复读 <strong>MySQL的默认隔离级别</strong></a></li>
+            <li><a href="#serializable-串行化">SERIALIZABLE 串行化</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#为了更高的性能锁的粒度需要尽可能的小">为了更高的性能，锁的粒度需要尽可能的小</a></li>
+    <li><a href="#innodb的锁类型">InnoDB的锁类型</a>
+      <ul>
+        <li><a href="#行锁共享锁与排他锁">行锁：共享锁与排他锁</a></li>
+        <li><a href="#意向锁">意向锁</a></li>
+        <li><a href="#记录锁">记录锁</a></li>
+        <li><a href="#gap-lock">Gap Lock</a></li>
+        <li><a href="#next-key-lock">Next-Key Lock</a></li>
+        <li><a href="#插入意向锁">插入意向锁</a></li>
+        <li><a href="#自增锁">自增锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#隔离级别二段锁与mvcc">隔离级别、二段锁与MVCC</a>
+      <ul>
+        <li><a href="#无锁一致性读">无锁一致性读</a></li>
+      </ul>
+    </li>
+    <li><a href="#场景试验">场景试验</a>
+      <ul>
+        <li><a href="#理论指导">理论指导</a></li>
+        <li><a href="#0-环境">0. 环境</a></li>
+        <li><a href="#1-自增主键并发插入">1. 自增主键，并发插入</a></li>
+        <li><a href="#2-在非主键索引上获取排他锁会发生什么">2. 在非主键索引上获取排他锁，会发生什么？</a></li>
+        <li><a href="#3-在无索引列上进行一行的排他操作和范围的排他操作">3. 在无索引列上进行一行的排他操作和范围的排他操作。</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>首先介绍了事务与隔离级别，引入了加锁的复杂性以及InnoDB的锁类型。最后对于各种索引、数据的加锁情况进行了相应的分析。</p>
+<h1 id="加锁是为了数据库能够在并发下正确运行">加锁是为了数据库能够在并发下正确运行</h1>
+<p>MySQL是一个支持<strong>事务</strong>的数据库。ACID中的独立性的实现就是<strong>隔离级别</strong>。</p>
+<h2 id="四个隔离级别">四个隔离级别</h2>
+<p><em>注意，不同数据库对于事务的隔离级别实现略有不同。</em></p>
+<h3 id="read-uncommited-可能读到未提交的事务">READ UNCOMMITED （可能）读到未提交的事务</h3>
+<p>存在的问题：<strong>脏读</strong></p>
+<p>一个事务可能读取到另一个事务作出的、<strong>未提交</strong>的修改。</p>
+<p>实际生产中，这种隔离级别通常没什么使用场景。</p>
+<h3 id="read-committed-只能读到已经提交的事务">READ COMMITTED 只能读到已经提交的事务</h3>
+<p>为了解决脏读，该隔离级别限制一个事务中的任意修改，在提交之前，都不会被其他事务读取到。</p>
+<p>存在的问题：<strong>不可重复读</strong></p>
+<p>考虑一种情景：</p>
+<ol>
+<li>事务A首先读取数据x值记为x1</li>
+<li>事务B修改x为x2并提交</li>
+<li>此时事务A再次读取x获得x2与x1不同</li>
+</ol>
+<p>这种情况称为<strong>不可重复读</strong>。</p>
+<h3 id="repeatable-read-可重复读-mysql的默认隔离级别">REPEATABLE READ 可重复读 <strong>MySQL的默认隔离级别</strong></h3>
+<p>通常可重复读解决了不可重复读问题。</p>
+<p>存在的问题：<strong>幻读</strong></p>
+<p>类似不可重复读的形成原因，将特定的数据的查询，改成范围查询。</p>
+<p>事务B创建一条新的记录，那么事务A第二次查询的时候，就会有一条新的记录被查到。这种现象成为<strong>幻读</strong>。</p>
+<p>对于快照读，InnoDB使用<code>MVCC</code>来解决幻读；对于当前读，使用<code>Next-Key Lock</code>来解决。</p>
+<h3 id="serializable-串行化">SERIALIZABLE 串行化</h3>
+<p>以上的问题均为多个事务并发执行导致的。串行化隔离级别将事务串行执行，自然不会产生问题。</p>
+<h1 id="为了更高的性能锁的粒度需要尽可能的小">为了更高的性能，锁的粒度需要尽可能的小</h1>
+<p>数据的安全、准确与能承载的并发量是跷跷板的两端。</p>
+<p>在能够满足业务对数据安全的情况下，为了提高性能，减少锁的粒度，是提高性能的有效方法。</p>
+<h1 id="innodb的锁类型">InnoDB的锁类型</h1>
+<p>行锁，意向锁(Intention Lock)，记录锁（Record Lock），间隙锁，Next-key锁，插入意向锁，自增数值锁。</p>
+<h2 id="行锁共享锁与排他锁">行锁：共享锁与排他锁</h2>
+<p>InnoDB实现了标准的行锁。</p>
+<p>其中包含了共享锁与排他锁。</p>
+<h2 id="意向锁">意向锁</h2>
+<p>意向锁是用来兼容表锁与行锁而设计的。</p>
+<p>意向锁是一个表锁。分为读写两种，IX和IS。</p>
+<p>意向锁有两个约定：</p>
+<ol>
+<li>对于尝试申请行锁读锁的事务，必须先申请到IS锁。排他锁亦然。</li>
+<li>意向锁会阻塞读写表锁，如IX阻塞读表锁，不会阻塞读行锁。</li>
+</ol>
+<p>不严谨的讲，持有一个意向锁，表明该事务持有“部分”该种表锁。</p>
+<h2 id="记录锁">记录锁</h2>
+<p>记录锁是加在<strong>索引的对应条目</strong>上的。用于实现行锁，如避免其他事务修改对应条件的记录。</p>
+<p>我认为记录锁就是行锁的实现。</p>
+<h2 id="gap-lock">Gap Lock</h2>
+<p>间隙锁是加在<strong>索引的两个条目之间或到正/负无穷</strong>上的锁。</p>
+<p>用来避免其他事务在本事务因为写锁读、更新删除的条件划定的范围中增加记录。</p>
+<p>在RR下，InnoDB利用间隙锁来避免<strong>当前读</strong>的幻读。对于<strong>快照读</strong>，使用MVCC来解决。</p>
+<p><em>当前读指的是在事务中读取最新版本的数据，比如使用了<code>for update</code>的<code>select</code>语句。</em></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-mysql" data-lang="mysql"><span class="c1"># id是主键
+</span><span class="c1"># transaction A
+</span><span class="c1"></span><span class="n">begin</span><span class="w">
+</span><span class="w"></span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">upate</span><span class="w"> </span><span class="c1"># 在id索引上会有10 - 20的索引
+</span><span class="c1">### 不要提交
+</span><span class="c1"></span><span class="w">
+</span><span class="w"></span><span class="c1"># transaction B
+</span><span class="c1"></span><span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="k">values</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">val</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="w"> </span><span class="c1"># 会被阻塞
+</span></code></pre></td></tr></table>
+</div>
+</div><p><strong>如果查询的条件没有在索引上呢？</strong></p>
+<p>(RR下)会退化锁住全表的行。<em>这真的不是我试验哪里出问题了🏇？</em></p>
+<h2 id="next-key-lock">Next-Key Lock</h2>
+<p>Next-Key锁是一个记录锁和锁定该记录前的间隙的间隙锁的组合。</p>
+<h2 id="插入意向锁">插入意向锁</h2>
+<p>插入意向锁用来增加并发度。</p>
+<p>插入意向锁是一种由<code>Insert</code>发起的间隙锁。</p>
+<p>不同于间隙锁的排他，插入意向锁是一种意向排他锁。</p>
+<p>对于两个事务，如果是因为<code>Insert</code>导致需要加间隙锁的时候，会尝试加一个插入意向锁。</p>
+<p>相较于间隙锁不允许任何插入，插入意向锁之间，允许不同位置的插入。</p>
+<h2 id="自增锁">自增锁</h2>
+<p>对于自增的列，可以通过配置来对严格顺序生成和并发性能之间进行权衡。</p>
+<h1 id="隔离级别二段锁与mvcc">隔离级别、二段锁与MVCC</h1>
+<p>InnoDB使用二段锁与MVCC的结合，实现了不同的隔离级别的要求，进一步的，实现了性能与数据安全性的不同场景下的平衡。</p>
+<p>对于修改、删除和写锁读，InnoDB会根据走的索引，首先将每个行都加上排他锁，随后检查是否符合条件。
+特别的，对于RC下的<code>UPDATE</code>操作，如果要检查的记录已经加锁了，会尝试去检查对应的记录是否符合条件，如果符合条件会等待锁；不符合会跳过。这种特性叫做<a href="https://cloud.tencent.com/developer/article/1651628"><strong>半一致性读</strong></a></p>
+<p>接下来的操作与隔离级别有关。</p>
+<p>对于RC，InnoDB会释放不会修改的行的锁。</p>
+<p>对于RR，InnoDB不会释放。</p>
+<h2 id="无锁一致性读">无锁一致性读</h2>
+<p>InnoDB通过多版本并发控制来为每一个事务提供一个一致的视图。</p>
+<h1 id="场景试验">场景试验</h1>
+<h2 id="理论指导">理论指导</h2>
+<p>对于读请求，在RR及更宽松的情况下，InnoDB通过无锁一致读实现不加锁的读；在序列化级别，读请求也会加锁。</p>
+<p>对于<code>update/delete</code>，InnoDB会在扫描到的所有的索引行上加<strong>Next-Key锁</strong>（如果走的是唯一索引，会选择只加记录锁）。</p>
+<ul>
+<li>如前所说，RR级别只在事务完成后释放获得的锁（不论行是否完全符合条件）。</li>
+<li>RC级别会在根据<code>where</code>后的条件判断后，释放不符合的行的锁。</li>
+</ul>
+<h2 id="0-环境">0. 环境</h2>
+<p>以下试验如无特殊说明，均在RR隔离级别下，数据库版本5.7。</p>
+<p>有的试验不得不改动表结构才能得出结论，所以有的试验数据不太符合。</p>
+<p>表结构：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-mysql" data-lang="mysql"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="o">`</span><span class="n">t1</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span><span class="w">  </span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="w"> </span><span class="kt">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="kp">AUTO_INCREMENT</span><span class="p">,</span><span class="w">
+</span><span class="w">  </span><span class="o">`</span><span class="n">val</span><span class="o">`</span><span class="w"> </span><span class="kt">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;0&#39;</span><span class="p">,</span><span class="w">
+</span><span class="w">  </span><span class="o">`</span><span class="n">str</span><span class="o">`</span><span class="w"> </span><span class="kt">varchar</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="w">
+</span><span class="w">  </span><span class="o">`</span><span class="n">no_idx_val</span><span class="o">`</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;0&#39;</span><span class="p">,</span><span class="w">
+</span><span class="w">  </span><span class="o">`</span><span class="n">uni_val</span><span class="o">`</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;0&#39;</span><span class="p">,</span><span class="w">
+</span><span class="w">  </span><span class="o">`</span><span class="n">val_with_idx_2</span><span class="o">`</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;0&#39;</span><span class="p">,</span><span class="w">
+</span><span class="w">  </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="p">),</span><span class="w">
+</span><span class="w">  </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="o">`</span><span class="n">uni_uni_val</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">uni_val</span><span class="o">`</span><span class="p">),</span><span class="w">
+</span><span class="w">  </span><span class="k">KEY</span><span class="w"> </span><span class="o">`</span><span class="n">idx_val</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">val</span><span class="o">`</span><span class="p">),</span><span class="w">
+</span><span class="w">  </span><span class="k">KEY</span><span class="w"> </span><span class="o">`</span><span class="n">idx_val2</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="o">`</span><span class="n">val_with_idx_2</span><span class="o">`</span><span class="p">)</span><span class="w">
+</span><span class="w"></span><span class="p">)</span><span class="w"> </span><span class="kp">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span><span class="w"> </span><span class="kp">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">16</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="kp">CHARSET</span><span class="o">=</span><span class="n">utf8</span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id="1-自增主键并发插入">1. 自增主键，并发插入</h2>
+<p>结论：不会阻塞，先执行的获得较小的自增值。</p>
+<p>试验过程：</p>
+<ol>
+<li>
+<p>分别开启两个事务先后执行</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-mysql" data-lang="mysql"><span class="c1"># transactionA
+</span><span class="c1"></span><span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="nf">t1</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">no_idx_val</span><span class="p">,</span><span class="w"> </span><span class="n">uni_val</span><span class="p">)</span><span class="w"> </span><span class="k">values</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;record8&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="c1"># transactionB
+</span><span class="c1"></span><span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="nf">t1</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">no_idx_val</span><span class="p">,</span><span class="w"> </span><span class="n">uni_val</span><span class="p">)</span><span class="w"> </span><span class="k">values</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;record8&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span><span class="w">
+</span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>在提交之前的<code>show engine innodb status</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-text" data-lang="text">------------
+TRANSACTIONS
+------------
+Trx id counter 2966
+Purge done for trx&#39;s n:o &lt; 2963 undo n:o &lt; 0 state: running but idle
+History list length 34
+LIST OF TRANSACTIONS FOR EACH SESSION:
+---TRANSACTION 422034519421440, not started
+0 lock struct(s), heap size 1136, 0 row lock(s)
+---TRANSACTION 422034519418704, not started
+0 lock struct(s), heap size 1136, 0 row lock(s)
+---TRANSACTION 2965, ACTIVE 21 sec
+1 lock struct(s), heap size 1136, 0 row lock(s), undo log entries 1
+MySQL thread id 11, OS thread handle 140559053973248, query id 430 localhost root
+---TRANSACTION 2963, ACTIVE 94 sec
+1 lock struct(s), heap size 1136, 0 row lock(s), undo log entries 1
+MySQL thread id 4, OS thread handle 140559054243584, query id 425 localhost root
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>先提交后写入语句的事务，发现较小的id由先写入命令的事务获得。</p>
+<pre><code class="language-ditaa" data-lang="ditaa">@startuml
+ditaa
++----+--------+----------+------------+---------+
+| id | val    | str      | no_idx_val | uni_val |
++----+--------+----------+------------+---------+
+| .. | ...... | ........ | .......... | ....... |
+| 10 |      8 | record8  |          8 |       8 |
+| 12 |     10 | record10 |         10 |      10 |
++----+--------+----------+------------+---------+
+@enduml
+</code></pre></li>
+</ol>
+<h2 id="2-在非主键索引上获取排他锁会发生什么">2. 在非主键索引上获取排他锁，会发生什么？</h2>
+<ol>
+<li>
+<p>非主键非唯一索引相等搜索</p>
+<p>结论：</p>
+<ol>
+<li>会为符合条件的记录在主键记录上行锁排他。</li>
+<li>会在该非唯一索引上加一个间隙锁，范围是该值的前后两个值，均为开区间。
+<ol>
+<li>即假设数据有333,4444,55555，那么间隙锁的范围是(334,55554)。</li>
+</ol>
+</li>
+<li>非唯一索引上的该值的记录有一个排他行锁。</li>
+</ol>
+<p>数据：</p>
+<pre><code class="language-ditaa" data-lang="ditaa">@startuml
+ditaa
++----+--------+----------+------------+---------+----------------+
+| id | val    | str      | no_idx_val | uni_val | val_with_idx_2 |
++----+--------+----------+------------+---------+----------------+
+|  1 |    999 | record1  |       1111 |       1 |            999 |
+|  2 | 362324 | record2  |        222 |       2 |         362324 |
+|  3 |   3624 | record3  |          1 |       3 |           3624 |
+|  4 |    324 | record4  |          4 |       4 |            324 |
+|  5 |   9999 | record5  |          1 |       5 |           9999 |
+|  6 |   9999 | record6  |        999 |       6 |           9999 |
+|  7 |    999 | record7  |        998 |       7 |            999 |
+|  9 |      9 | record9  |          9 |       9 |              9 |
+| 10 |      8 | record8  |          8 |       8 |              8 |
+| 12 |     10 | record10 |         10 |      10 |             10 |
+| 14 |     13 | record13 |         13 |      13 |             13 |
+| 15 |     14 | record14 |         14 |      14 |             14 |
++----+--------+----------+------------+---------+----------------+
+@enduml
+</code></pre><p>过程：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-mysql" data-lang="mysql"><span class="c1"># 1. transaction A
+</span><span class="c1"></span><span class="k">update</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="kt">set</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">998</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">9999</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="c1"># 2 transaction B
+</span><span class="c1"># 2.1 数据上和A完全无关的数据或不存在的记录
+</span><span class="c1"></span><span class="k">update</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="kt">set</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">222</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">8888</span><span class="p">;</span><span class="w"> </span><span class="c1"># 不会阻塞，因为8888不存在对应的行
+</span><span class="c1"># 2.2 相同的查询条件修改
+</span><span class="c1"></span><span class="k">update</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="kt">set</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">222</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">9999</span><span class="p">;</span><span class="w"> </span><span class="c1"># 阻塞在idx_val的排他锁上
+</span><span class="c1"># 2.3 将其他记录的val修改改为9999/小于9999的最大val+1 即3625/大于9999的最小val-1 即362323
+</span><span class="c1"></span><span class="k">update</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="kt">set</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">9999</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="mi">15</span><span class="p">;</span><span class="w"> 
+</span><span class="w"></span><span class="c1"># 阻塞，事务B试图获取idx_val上的插入意向锁，被一个gap排他锁阻塞。
+</span><span class="c1"># 很奇怪，是因为RR吗？如果是RR那么MVCC应该就可以实现了，有必要加锁吗？
+</span><span class="c1"># 2.4 尝试修改对应主键的记录的值
+</span><span class="c1"></span><span class="k">update</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="kt">set</span><span class="w"> </span><span class="n">no_idx_val</span><span class="o">=</span><span class="mi">5</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="mi">5</span><span class="p">;</span><span class="w"> </span><span class="c1"># 阻塞在主键的排他行锁上
+</span><span class="c1"># 2.5 修改符合该条件的记录
+</span><span class="c1"></span><span class="k">update</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="kt">set</span><span class="w"> </span><span class="n">no_idx_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">233</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">val</span><span class="o">=</span><span class="mi">9999</span><span class="p">;</span><span class="w"> </span><span class="c1"># 阻塞在idx_val上的排他行锁
+</span><span class="c1"></span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>非主键唯一索引相等搜索</p>
+<p>结论：</p>
+<ol>
+<li>会为符合条件的记录在主键记录上行锁排他。</li>
+<li>会为符合条件的记录在该唯一索引记录上行锁排他，<strong>没有间隙锁</strong>。</li>
+<li>因为状态展示提示有5个行被锁了，可能是非唯一索引上的该值的记录有一个排他行锁。</li>
+</ol>
+</li>
+<li>
+<p>非主键非唯一索引范围搜索</p>
+<p>结论：</p>
+<ol>
+<li>会把符合条件的记录的主键加一个排他行锁</li>
+<li>会在非唯一索引的符合条件的记录上加一个行锁</li>
+<li>会加一个间隙锁，范围类似上述的非唯一索引相等的情况
+<ol>
+<li>即假设数据有333,4444,55555，搜索条件是2000~5000，那么间隙锁的范围是(334,55554)。</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>
+<p>非主键唯一索引范围搜索</p>
+<p>结论：</p>
+<ol>
+<li>会把符合条件的记录的主键加一个排他行锁</li>
+<li>会在唯一索引的符合条件的记录上加一个行锁</li>
+<li>会加一个间隙锁，范围类似上述的非唯一索引相等的情况
+<ol>
+<li>即假设数据有333,4444,55555，搜索条件是2000~5000，那么间隙锁的范围是(334,55554)。</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="3-在无索引列上进行一行的排他操作和范围的排他操作">3. 在无索引列上进行一行的排他操作和范围的排他操作。</h2>
+<p><strong>会锁所有的行和[-inf, +inf]区间。</strong></p>
+<p>操作：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-mysql" data-lang="mysql"><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">no_idx_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">update</span><span class="p">;</span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div><p>所以说，根据无索引的条件进行筛选，是一个比较危险的操作。</p>
+<p>简单来说，如果不锁全表，就无法通过锁来控制符合条件的并发修改，看起来也是合理的。</p>
+<h1 id="参考">参考</h1>
+<ul>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-transaction-model.html">MySQL手册-InnoDB锁与事务模型</a></li>
+<li><a href="https://cloud.tencent.com/developer/article/1651628">技术分享 | 什么是半一致性读？</a></li>
+</ul>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-10-27
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/mysql/">MySQL</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/memo/mysql/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">MySQL相关备忘录</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/linux/process/">
+            <span class="next-text nav-default">进程与调度</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-10-27 02:46:48 \u002b0800 \u002b0800',
+        title: 'MySQL各种情况的加锁分析',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

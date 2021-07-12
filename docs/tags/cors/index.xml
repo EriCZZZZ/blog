@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CORS on blog</title>
+    <link>https://blog.er1c.dev/tags/cors/</link>
+    <description>Recent content in CORS on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 21 Aug 2020 23:17:27 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/cors/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>HTTP的安全机制</title>
+      <link>https://blog.er1c.dev/post/http/what-is-http-security/</link>
+      <pubDate>Fri, 21 Aug 2020 23:17:27 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/http/what-is-http-security/</guid>
+      <description>最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。 对HTTP又有了一些新的理解 并深深的自我怀疑我真的了解HTTP吗？ 。 HTTP的</description>
+    </item>
+    
+  </channel>
+</rss>

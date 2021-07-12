@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>编译原理 第一章 笔记 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="第一章介绍了将语言编译的整个流程与相关的工具集， 提出了若干概念。 系列列表 编译原理 第一章 笔记 编译原理 第二章 笔记 编译工具流 预处理器 编译器 汇编器 链" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/compile/compilers/1/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="编译原理 第一章 笔记" />
+<meta property="og:description" content="第一章介绍了将语言编译的整个流程与相关的工具集， 提出了若干概念。 系列列表 编译原理 第一章 笔记 编译原理 第二章 笔记 编译工具流 预处理器 编译器 汇编器 链" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/compile/compilers/1/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-05-14T16:54:42&#43;08:00" />
+<meta property="article:modified_time" content="2021-05-14T16:54:42&#43;08:00" />
+
+<meta itemprop="name" content="编译原理 第一章 笔记">
+<meta itemprop="description" content="第一章介绍了将语言编译的整个流程与相关的工具集， 提出了若干概念。 系列列表 编译原理 第一章 笔记 编译原理 第二章 笔记 编译工具流 预处理器 编译器 汇编器 链"><meta itemprop="datePublished" content="2021-05-14T16:54:42&#43;08:00" />
+<meta itemprop="dateModified" content="2021-05-14T16:54:42&#43;08:00" />
+<meta itemprop="wordCount" content="947">
+<meta itemprop="keywords" content="compilers-book,book," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译原理 第一章 笔记"/>
+<meta name="twitter:description" content="第一章介绍了将语言编译的整个流程与相关的工具集， 提出了若干概念。 系列列表 编译原理 第一章 笔记 编译原理 第二章 笔记 编译工具流 预处理器 编译器 汇编器 链"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">编译原理 第一章 笔记</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-05-14 </span>
+        
+          <span class="more-meta"> 约 947 字 </span>
+          <span class="more-meta"> 预计阅读 2 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#编译工具流">编译工具流</a></li>
+    <li><a href="#编译器划分">编译器划分</a>
+      <ul>
+        <li><a href="#简单划分">简单划分</a></li>
+        <li><a href="#详细一点的">详细一点的</a></li>
+      </ul>
+    </li>
+    <li><a href="#编译器流程">编译器流程</a>
+      <ul>
+        <li><a href="#词法分析">词法分析</a></li>
+        <li><a href="#语法分析">语法分析</a></li>
+        <li><a href="#语义分析">语义分析</a></li>
+        <li><a href="#中间代码生成">中间代码生成</a></li>
+        <li><a href="#机器无关代码优化">机器无关代码优化</a></li>
+        <li><a href="#目标代码生成">目标代码生成</a></li>
+        <li><a href="#机器相关代码优化">机器相关代码优化</a></li>
+      </ul>
+    </li>
+    <li><a href="#编程语言基础">编程语言基础</a>
+      <ul>
+        <li><a href="#动态dynamic与静态static">动态(dynamic)与静态(static)</a></li>
+        <li><a href="#environments和states">Environments和States</a></li>
+        <li><a href="#静态作用域static-scope块结构block-structure和显式访问控制">静态作用域(static scope)、块结构(block structure)和显式访问控制</a></li>
+        <li><a href="#动态作用域dynamic-scope">动态作用域(dynamic scope)</a></li>
+        <li><a href="#参数传递机制与别名">参数传递机制与别名</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>第一章介绍了将语言编译的整个流程与相关的工具集，
+提出了若干概念。</p>
+
+
+
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/compile/compilers/1/">编译原理 第一章 笔记</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/compile/compilers/2/">编译原理 第二章 笔记</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<h1 id="编译工具流">编译工具流</h1>
+<ol>
+<li>预处理器</li>
+<li>编译器</li>
+<li>汇编器</li>
+<li>链接器､加载器</li>
+</ol>
+<h1 id="编译器划分">编译器划分</h1>
+<h2 id="简单划分">简单划分</h2>
+<ol>
+<li>前端 analysis</li>
+<li>后端 synthesis</li>
+</ol>
+<h2 id="详细一点的">详细一点的</h2>
+<ol>
+<li>lexical analyzer</li>
+<li>synatx analyzer</li>
+<li>semantic analyzer</li>
+<li>intermediate code generator</li>
+<li>machine-independent code optimizer</li>
+<li>code generator</li>
+<li>machine-dependent code optimizer</li>
+</ol>
+<h1 id="编译器流程">编译器流程</h1>
+<h2 id="词法分析">词法分析</h2>
+<p>词法分析器读入源程序的字符流，
+分析后输出token流与符号表。</p>
+<p>每个token表示源程序中的一个元素，
+结构如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-plain" data-lang="plain">&lt;abstract-name, symbol-table entry index&gt;
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="语法分析">语法分析</h2>
+<p>接受<strong>词法分析器</strong>产出的token流，
+按照语法规则，
+构建语法树。</p>
+<h2 id="语义分析">语义分析</h2>
+<p>检查源程序是否符合语言的语义定义，
+比如类型检查。</p>
+<h2 id="中间代码生成">中间代码生成</h2>
+<p>接受语法树作为输入，生成中间代码，
+比如三地址代码。</p>
+<h2 id="机器无关代码优化">机器无关代码优化</h2>
+<h2 id="目标代码生成">目标代码生成</h2>
+<h2 id="机器相关代码优化">机器相关代码优化</h2>
+<h1 id="编程语言基础">编程语言基础</h1>
+<p>介绍了一系列学习编译原理需要了解的概念。</p>
+<h2 id="动态dynamic与静态static">动态(dynamic)与静态(static)</h2>
+<p>当编译器在面对一个问题需要得到答案或得到一些信息时，
+如果能够在编译期间确定，那么称为<strong>静态</strong>的；
+反之，称为<strong>动态</strong>的。</p>
+<p>举个例子，变量的作用域，
+如果只需要读取源码就能得知变量的作用域，
+称为是<strong>静态作用域</strong>，反之称为<strong>动态作用域</strong>。</p>
+<h2 id="environments和states">Environments和States</h2>
+<p>中译是<strong>环境</strong>和<strong>状态</strong>，
+感觉不是特别有代表性。</p>
+<p>两者描述了名称(name)､内存的位置和内存位置上存储的数据之间的映射关系。</p>
+<p><strong>Environments</strong>表示名称和内存位置之间的映射；
+<strong>States</strong>表示内存位置与存储的数据之间的映射。</p>
+<p>举个例子，对于嵌套的两个作用域，
+相同名称(name)的两个变量，可以通过更换<strong>环境</strong>来完成切换；
+C语言中修改变量的值通过修改<strong>State</strong>来实现。</p>
+<h2 id="静态作用域static-scope块结构block-structure和显式访问控制">静态作用域(static scope)、块结构(block structure)和显式访问控制</h2>
+<p><strong>块</strong>是若干声明与语句的组合体。</p>
+<p>C语言是静态作用域，一个名称的作用域隐含的取决于它声明的位置。</p>
+<p>对于Java语言，使用了<code>private</code>/<code>public</code>/<code>protected</code>关键字来显示的控制名称的作用域。</p>
+<h2 id="动态作用域dynamic-scope">动态作用域(dynamic scope)</h2>
+<p>正如前面对于<strong>动态</strong>的定义，<strong>动态作用域</strong>意味着要等到运行时才能决定一个名称的作用域。</p>
+<p>常规的，比如宏，常规之外的有函数多态的实现。</p>
+<h2 id="参数传递机制与别名">参数传递机制与别名</h2>
+<p>调用函数时传递函数有<strong>值调用</strong>，<strong>引用调用</strong>和<strong>名调用</strong>。</p>
+<p>对于<strong>引用调用</strong>，不同的变量指向了同一个数据，
+会导致在一个变量上修改影响另一个变量的读取，这种称为<strong>别名</strong>。</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-05-14
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/compilers-book/">compilers-book</a>
+          <a href="/tags/book/">book</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/compile/compilers/2/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">编译原理 第二章 笔记</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/language/go/chan/">
+            <span class="next-text nav-default">go channel原理分析</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-05-14 16:54:42 \u002b0800 \u002b0800',
+        title: '编译原理 第一章 笔记',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

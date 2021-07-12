@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>abbr on blog</title>
+    <link>https://blog.er1c.dev/tags/abbr/</link>
+    <description>Recent content in abbr on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 22 Nov 2020 23:13:13 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/abbr/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>缩写备忘录</title>
+      <link>https://blog.er1c.dev/post/memo/abbr/</link>
+      <pubDate>Sun, 22 Nov 2020 23:13:13 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/abbr/</guid>
+      <description>MSB Most Significant Bit 最高位 WAL Write Ahead Log 预写日志 MVP minimum viable product 最小可用产品。指一种产品版本，只实现必要的功能。</description>
+    </item>
+    
+  </channel>
+</rss>

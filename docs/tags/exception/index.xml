@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>exception on blog</title>
+    <link>https://blog.er1c.dev/tags/exception/</link>
+    <description>Recent content in exception on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 29 Aug 2020 10:44:52 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/exception/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>中断与异常</title>
+      <link>https://blog.er1c.dev/post/linux/interrupt-and-exception/</link>
+      <pubDate>Sat, 29 Aug 2020 10:44:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/interrupt-and-exception/</guid>
+      <description>中断与异常的关系 刚开始看中断、异常相关的资料的时候，一直没有搞清楚两者的区别，导致一直是云里雾里、一头雾水，感觉资料怎么都是互相矛盾的啊。 其</description>
+    </item>
+    
+  </channel>
+</rss>

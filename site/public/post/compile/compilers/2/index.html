@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>编译原理 第二章 笔记 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="第二章通过实现一个将中序表达式转化为后续表达式的编译器， 简单介绍了编译器前端实现需要的技术。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/compile/compilers/2/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="编译原理 第二章 笔记" />
+<meta property="og:description" content="第二章通过实现一个将中序表达式转化为后续表达式的编译器，
+简单介绍了编译器前端实现需要的技术。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/compile/compilers/2/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-05-31T23:13:00&#43;08:00" />
+<meta property="article:modified_time" content="2021-05-31T23:13:00&#43;08:00" />
+
+<meta itemprop="name" content="编译原理 第二章 笔记">
+<meta itemprop="description" content="第二章通过实现一个将中序表达式转化为后续表达式的编译器，
+简单介绍了编译器前端实现需要的技术。"><meta itemprop="datePublished" content="2021-05-31T23:13:00&#43;08:00" />
+<meta itemprop="dateModified" content="2021-05-31T23:13:00&#43;08:00" />
+<meta itemprop="wordCount" content="4357">
+<meta itemprop="keywords" content="compilers-book,book," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译原理 第二章 笔记"/>
+<meta name="twitter:description" content="第二章通过实现一个将中序表达式转化为后续表达式的编译器，
+简单介绍了编译器前端实现需要的技术。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">编译原理 第二章 笔记</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-05-31 </span>
+        
+          <span class="more-meta"> 约 4357 字 </span>
+          <span class="more-meta"> 预计阅读 9 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#tldr">TL;DR</a></li>
+    <li><a href="#21-引言">2.1 引言</a>
+      <ul>
+        <li><a href="#分析语法与语义"><strong>分析</strong>：<strong>语法</strong>与<strong>语义</strong></a></li>
+        <li><a href="#语法制导翻译"><strong>语法制导翻译</strong></a></li>
+        <li><a href="#编译器前端模型">编译器前端模型</a></li>
+      </ul>
+    </li>
+    <li><a href="#22-语法定义">2.2 语法定义</a>
+      <ul>
+        <li><a href="#首先给出了语法定义的若干定义">首先给出了语法定义的若干定义</a></li>
+        <li><a href="#文法的定义">文法的定义</a></li>
+        <li><a href="#推导语法分析与语法分析树">推导、语法分析与语法分析树</a></li>
+        <li><a href="#文法的二义性">文法的二义性</a></li>
+        <li><a href="#运算符的结合性优先级">运算符的结合性、优先级</a>
+          <ul>
+            <li><a href="#一种支持运算符优先级和结合性的文法">一种支持运算符优先级和结合性的文法</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#23-语法制导翻译">2.3 语法制导翻译</a>
+      <ul>
+        <li><a href="#两个与语法制导翻译有关的概念">两个与<strong>语法制导翻译</strong>有关的概念</a>
+          <ul>
+            <li><a href="#属性-attribute">属性 <em>(Attribute)</em></a></li>
+            <li><a href="#翻译方案-translation-schema">翻译方案 <em>(translation schema)</em></a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#24-语法分析">2.4 语法分析</a>
+      <ul>
+        <li><a href="#自顶向下的语法分析方法">自顶向下的语法分析方法</a></li>
+        <li><a href="#递归下降分析法recursive-descent-parsing与预测分析法predictive-parsing">递归下降分析法(recursive-descent parsing)与预测分析法(Predictive Parsing)</a></li>
+        <li><a href="#左递归问题-left-recursion">左递归问题 left-recursion</a></li>
+      </ul>
+    </li>
+    <li><a href="#25-简单表达式的翻译器">2.5 简单表达式的翻译器</a>
+      <ul>
+        <li><a href="#抽象语法树与语法解析树">抽象语法树与语法解析树</a></li>
+        <li><a href="#对于尾递归的简化">对于尾递归的简化</a></li>
+      </ul>
+    </li>
+    <li><a href="#26-词法分析">2.6 词法分析</a>
+      <ul>
+        <li><a href="#去除空格">去除空格</a></li>
+        <li><a href="#常量">常量</a></li>
+        <li><a href="#标识符与关键字的处理">标识符与关键字的处理</a></li>
+      </ul>
+    </li>
+    <li><a href="#27-符号表">2.7 符号表</a></li>
+    <li><a href="#28-中间代码生成">2.8 中间代码生成</a>
+      <ul>
+        <li><a href="#构造抽象语法树">构造抽象语法树</a></li>
+        <li><a href="#静态检查">静态检查</a></li>
+        <li><a href="#三地址代码-three-address-code">三地址代码 Three-Address Code</a>
+          <ul>
+            <li><a href="#语句-statements-的翻译">语句 <em>(Statements)</em> 的翻译</a></li>
+            <li><a href="#表达式-expressions-的翻译">表达式 <em>(Expressions)</em> 的翻译</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>第二章通过实现一个将中序表达式转化为后续表达式的编译器，
+简单介绍了编译器前端实现需要的技术。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/compile/compilers/1/">编译原理 第一章 笔记</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/compile/compilers/2/">编译原理 第二章 笔记</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<h1 id="tldr">TL;DR</h1>
+<p>第二章从实现一个解析简单的四则运算的语法分析器开始，
+逐步引出了词法分析、语法分析、语义分析和生成三代码地址。
+在后半部分慢慢扩展了语法，并提出了问题和一些初步的方案。</p>
+<h1 id="21-引言">2.1 引言</h1>
+<p>编译器前端又称<strong>分析</strong>阶段，
+接受代码文件作为输入，
+通过词法分析、语法分析，
+最后生成被称为中间代码的内部表示。</p>
+<h2 id="分析语法与语义"><strong>分析</strong>：<strong>语法</strong>与<strong>语义</strong></h2>
+<p><strong>分析</strong>阶段的工作围绕语言的<strong>语法</strong>和<strong>语义</strong>展开：</p>
+<ul>
+<li><strong>语法</strong>定义了语言的正确形式，可以且通常由<strong>上下文无关文法</strong> <em>(context-free grammar)</em> 来描述。</li>
+<li><strong>语义</strong>表示了语言的含义，相较于<strong>语法</strong>，<strong>语义</strong>的描述难度高出很多，故采取非形式化描述与启发式描述来体现<strong>语义</strong>。</li>
+</ul>
+<h2 id="语法制导翻译"><strong>语法制导翻译</strong></h2>
+<p><strong>上下文无关文法</strong>除了可以定义<strong>语法</strong>，
+还可以用来帮助、引导翻译的进行。</p>
+<p><strong>语法制导翻译</strong>就是一种这样的、面向文法 <em>(grammar-oriented)</em> 的编译技术。</p>
+<h2 id="编译器前端模型">编译器前端模型</h2>
+<p>通常来说，一个编译器的前端：</p>
+<ol>
+<li>接受源代码字符流作为入参，通过词法分析，生成符号表，输出<strong>词法单元</strong>流。</li>
+<li>对<strong>词法单元</strong>流进行语法分析和语义分析，
+产出<strong>抽象语法树</strong> <em>(AST)</em> 或简称<strong>语法树</strong> <em>(syntax tree)</em>。</li>
+<li>中间代码生成器根据<strong>语法树</strong>生成三地址代码（一种中间代码的形式）。</li>
+</ol>
+<h1 id="22-语法定义">2.2 语法定义</h1>
+<h2 id="首先给出了语法定义的若干定义">首先给出了语法定义的若干定义</h2>
+<ol>
+<li>
+<p><strong>产生式</strong></p>
+<p>对于编程语言中常见的<code>if-else</code>结构，可以描述为：</p>
+<p>$$
+stmt \to \textbf{if} ( expr )\ stmt\ \textbf{else}\ stmt
+$$</p>
+<p>符合直觉的，$stmt$是一个程序代码块。而这样的规则被称为<strong>产生式</strong>。</p>
+<p>进一步的，对于<strong>产生式</strong>左侧的$stmt$，称为<strong>产生式头部</strong>或<strong>左部</strong>；
+对于右侧的$\textbf{if} ( expr )\ stmt\ \textbf{else}\ stmt$，称为<strong>产生式体</strong>或<strong>右部</strong>。</p>
+</li>
+<li>
+<p><strong>终结符</strong>与<strong>非终结符</strong></p>
+<p>像关键字$\textbf{if}$或词法元素$($这种，被称为<strong>终结符</strong>。
+反之，像$stmt$这种表示<strong>终结符</strong>串的符号称为<strong>非终结符</strong>。</p>
+</li>
+</ol>
+<h2 id="文法的定义">文法的定义</h2>
+<p><em>在编译原理这本书中，文法在某些时候指的是<strong>上下文无关文法</strong>。</em></p>
+<p>一个<strong>上下文无关文法</strong>由四个元素组成：</p>
+<ol>
+<li><strong>终结符</strong>集合</li>
+<li><strong>非终结符</strong>集合</li>
+<li><strong>产生式</strong>集合</li>
+<li>指定一个<strong>非终结符</strong>为<strong>开始</strong>符号</li>
+</ol>
+<h2 id="推导语法分析与语法分析树">推导、语法分析与语法分析树</h2>
+<p><strong>语法分析</strong> <em>(parsing)</em> 的任务是接受终结符号串作为参数，从<strong>文法</strong>的<strong>开始符号</strong>开始，
+寻找<strong>推导</strong>出该终结符号串的方法；如果无法找到，那么就抛出一个语法错误。</p>
+<p>符合直觉的，<strong>推导</strong> <em>(derivation)</em> 指的是从<strong>文法</strong>定义的<strong>开始</strong>符号开始，
+不断用<strong>非终结符</strong>的某一<strong>产生式体</strong>来替换<strong>产生式体</strong>中该<strong>非终结符</strong>。</p>
+<p><strong>语法分析树</strong> <em>(parse tree)</em> 是推导过程的图形化展示：</p>
+<ol>
+<li>根节点表示<strong>开始</strong>符号</li>
+<li>每个子节点表示父节点的产生式体中的终结符或非终结符，有序</li>
+<li>（可以得出）每个叶子节点均表示终结符，树内部的节点，均表示非终结符</li>
+</ol>
+<h2 id="文法的二义性">文法的二义性</h2>
+<p>对于给定的一个文法，
+如果可以有多个不同的语法分析树产生同一个终结符号串，
+那么称这个文法有<strong>二义性</strong> <em>(ambiguous)</em>。</p>
+<p>在文法的设计上，我们通过调整文法避免产生<strong>二义性</strong>或在使用文法时附加可以消除<strong>二义性</strong>的规则。</p>
+<p>举个简单的例子，
+对于表达式：</p>
+<p>$$
+2-5+9
+$$</p>
+<p>如果文法定义为：</p>
+<p>$$
+stmt \to stmt - stmt\ |\ stmt + stmt\ |\ digital
+$$</p>
+<p>基于优先匹配表达式左侧或右侧，可以构造出两种语法分析树：</p>
+<ol>
+<li>$(2-5)+9$</li>
+<li>$2-(5+9)$</li>
+</ol>
+<p>这个例子的一个问题是二义性，
+另一个问题是第二种的结合是错误的，
+进而引出了运算符的结合性问题。</p>
+<h2 id="运算符的结合性优先级">运算符的结合性、优先级</h2>
+<p>对于<code>1 + 5 + 2</code>中的<code>5</code>来说，左右都是运算符<code>+</code>，
+<strong>运算符的结合性</strong>来决定它应该和哪个<code>+</code>结合。
+由于<code>+</code>是<strong>左结合</strong>的，意味着<code>1+5</code>是优先的选择。
+<strong>右结合</strong>的符号举个例子有指数符号、C语言中的赋值符号<code>=</code>。</p>
+<p>表达式中经常会出现一个运算分量左右为不同的运算符的情况，
+如<code>1 + 5 * 2</code>。<strong>运算符的优先级</strong>决定了<code>5</code>优先与哪个运算符结合，
+因为<code>*</code>的优先级比<code>+</code>高，这里会优先选择<code>5 * 2</code>。</p>
+<p>我理解<strong>结合性</strong>解决了同符号之间的二义性问题，
+<strong>优先级</strong>则是解决了不同符号之间的二义性问题。</p>
+<h3 id="一种支持运算符优先级和结合性的文法">一种支持运算符优先级和结合性的文法</h3>
+<p>首先构造<strong>优先级表</strong>，每一行的运算符拥有相同的<strong>结合性</strong>和<strong>优先级</strong>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-plain" data-lang="plain">左结合：+ -
+左结合：* /
+</code></pre></td></tr></table>
+</div>
+</div><p>为每一个层级创建一个非终结符：表示加减的$expr$和表示乘除的$term$。
+为运算分量创建一个非终结符：$factor$。</p>
+<p>$$
+expr \to expr + term \ |\ expr - term\ |\ term
+$$
+$$
+term \to term * factor\ |\ term / factor\ |\ factor
+$$
+$$
+factor \to \textbf{digit}\ |\ (expr)
+$$</p>
+<p>可以看到$factor$会优先生成高优先级层级的非终结符$term$，
+然后由$term$进一步的生成$expr$，
+这种方式可以支持若干层优先级的构建。</p>
+<h1 id="23-语法制导翻译">2.3 语法制导翻译</h1>
+<p>这篇文档解释的比较到位：
+<a href="https://web.stanford.edu/class/archive/cs/cs143/cs143.1128/handouts/160%20Syntax-Directed%20Translation.pdf">对于语法制导翻译的一些介绍</a>。</p>
+<p><strong>语法制导翻译</strong> <em>(syntax-directed translation)</em> 是一种实现编译器的思路。</p>
+<p>其核心思想是围绕语法定义，通过解析语法来驱动整个编译的完成。</p>
+<p><strong>语法制导翻译</strong>可以通过向语法符号附加规则､定义､需要执行的代码（称为动作 <em>(Action)</em>）等信息来实现。</p>
+<h2 id="两个与语法制导翻译有关的概念">两个与<strong>语法制导翻译</strong>有关的概念</h2>
+<h3 id="属性-attribute">属性 <em>(Attribute)</em></h3>
+<p>这里的<strong>属性</strong>的含义与常规的认知一致，
+表示语言中的结构关联的属性，
+语法符号用来表示语言中的结构，所以也可以说是语法符号拥有的属性。</p>
+<p>一些例子，变量的类型，整型的值，函数的名称都可以是<strong>属性</strong>。</p>
+<p>属性分为<strong>继承属性</strong>和<strong>综合属性</strong>，
+两者由产生的来源决定：
+如果由产生式决定，
+那么称为<strong>综合属性</strong>；
+如果由父节点或兄弟节点决定，
+那么称为<strong>继承属性</strong>。</p>
+<h3 id="翻译方案-translation-schema">翻译方案 <em>(translation schema)</em></h3>
+<p><strong>翻译方案</strong>指的是将程序片段附加到文法符号的产生式的这种方法。</p>
+<p>这些程序片段会被语法分析驱动的过程中依次调用，产生输出，
+组合之后就是翻译的结果。</p>
+<p><strong>翻译方案</strong>由两种思路，
+一种是修改<strong>属性</strong>，来拼接结果；
+另一种是直接输出结果。</p>
+<h1 id="24-语法分析">2.4 语法分析</h1>
+<p><strong>语法分析</strong>是根据定义的文法，寻找如何生成输入的<strong>词法单元</strong>流的过程。</p>
+<p>这一节介绍了一种语法分析的方法<strong>递归下降</strong> <em>(recursive descent)</em>。
+<strong>递归下降</strong>方法不光可以构建<strong>语法分析器</strong>，也可以用来构建<strong>语法制导翻译器</strong>。</p>
+<p>大部分语法分析方法根据语法分析树节点的构造顺序属于两个分类：
+<strong>自顶向下</strong>与<strong>自顶向上</strong>。</p>
+<p>两者有各自的优势：</p>
+<ul>
+<li><strong>自顶向下</strong>类型便于人工构造高效的语法分析器。</li>
+<li><strong>自顶向上</strong>类型能够支持更加复杂的语法，
+所以生成编译器的工具通常使用这种策略。</li>
+</ul>
+<h2 id="自顶向下的语法分析方法">自顶向下的语法分析方法</h2>
+<p><strong>自顶向下</strong>方式生成一个语法分析树从根节点开始，
+递归的执行如下流程：</p>
+<ol>
+<li>在表示非终结符$A$的节点$N$上，<strong>选择一个产生式</strong>，
+根据产生式体的语法符号，依次构建节点$N$的子节点。</li>
+<li>寻找下一个需要构建子节点的节点
+（，通常是目前的语法分析树的最左侧、未展开的、表示非终结符的节点），
+循环这个过程。</li>
+</ol>
+<h2 id="递归下降分析法recursive-descent-parsing与预测分析法predictive-parsing">递归下降分析法(recursive-descent parsing)与预测分析法(Predictive Parsing)</h2>
+<p><strong>递归下降分析法</strong>是一种<strong>自顶向下</strong>的语法分析方法，
+通过一组递归的过程来进行分析。
+每个终结符都有自己的处理过程，
+<strong>递归下降分析法</strong>通过递归的调用这些过程，
+来处理输入。</p>
+<p>对于一些设计的语法，
+完成前述的流程只需要一次自左向右的扫描，
+原因在于 <strong>【选择一个产生式】</strong> 时，不需要“试错”，
+这种情况是<strong>递归下降分析法</strong>的一种简单形式，
+称为<strong>预测分析法</strong>。</p>
+<p>为了说明这种情况，
+首先给出<strong>前瞻符号</strong> <em>(lookahead symbol)</em> 的概念，
+对于语法分析中，当前正在被扫描的终结符，称为<strong>前瞻符号</strong>。</p>
+<p>如果<strong>前瞻符号</strong>能够唯一确定需要选择的产生式，
+那么就不需要回溯，也就是说，只需要一次扫描就能完成语法分析。</p>
+<p>自然的，引出概念$FIRST(\alpha)$：
+对于一个语法符号$\alpha$，
+$FIRST(\alpha)$表示$\alpha$能够生成的若干终结符串的串首的终结符的集合。
+根据定义，终结符的$FIRST$是它自身；
+非终结符的$FIRST$是它若干产生式的首个语法符号的$FIRST$的并集。</p>
+<p>如果语法定义的所有非终结符的$FIRST$两两均不相交，
+那么就可以使用<strong>预测分析法</strong>来构建对应的语法分析器。</p>
+<h2 id="左递归问题-left-recursion">左递归问题 left-recursion</h2>
+<p><strong>递归下降</strong>语法分析器在分析特定的语法时，可能进入无限循环。</p>
+<p>比如如下形式的<strong>左递归</strong>产生式：</p>
+<p>$$
+expr \to expr\ +\ term
+$$</p>
+<p>可以通过一些转换来消除左递归。</p>
+<h1 id="25-简单表达式的翻译器">2.5 简单表达式的翻译器</h1>
+<p><a href="https://github.com/er1c-zh/blog/blob/d61156c9f935e6d79a72e9c653e84f5c95d92a85/practice/compilers/simple_converter/main.go">一个基于go的实现</a></p>
+<h2 id="抽象语法树与语法解析树">抽象语法树与语法解析树</h2>
+<blockquote>
+<p>抽象语法树 abstract syntax tree
+语法解析树 parse tree</p>
+</blockquote>
+<p>AST的节点表示程序结构，
+语法解析树的节点表示终结符与非终结符。</p>
+<h2 id="对于尾递归的简化">对于尾递归的简化</h2>
+<p>对于语法制导翻译来说，非终结符有自己的<strong>过程</strong> <em>(procedure)</em>，
+对于其中有<strong>尾递归</strong>类型的递归调用时，
+可以转换为循环简化实现。</p>
+<h1 id="26-词法分析">2.6 词法分析</h1>
+<p>词法分析用来将字符流分割为<strong>词法单元</strong>，
+构成<strong>词法单元</strong>的字符序列称为<strong>词素</strong> <em>(lexme)</em>。</p>
+<p>本节面向简单的加减乘除表达式介绍了词法分析需要做的工作。</p>
+<h2 id="去除空格">去除空格</h2>
+<p>对于当前没有需要保留空字符的情况，直接采取跳过空字符的策略即可。</p>
+<h2 id="常量">常量</h2>
+<p>如果遇到了数字，
+通过<strong>预读</strong>确定下一个字符，
+如果是数字就继续读取，否则停止。</p>
+<h2 id="标识符与关键字的处理">标识符与关键字的处理</h2>
+<p>某些字符串用来表示程序的结构，称为<strong>关键字</strong> <em>(keyword)</em>；
+或者为函数、变量等命名，称为标识符。</p>
+<p>对于一个字符序列，需要区分是构成了标识符还是关键字，
+这个工作可以通过<strong>保留字</strong> <em>(reserved)</em> 来解决。</p>
+<p>本节的词法分析器使用一个字符串为key、<strong>引用</strong> *(reference)*为value的表格来解决两个问题：</p>
+<ol>
+<li>将同样的字符串使用同一个<strong>引用</strong>来表示，便于后续的操作。</li>
+<li>在初始化时写入<strong>保留字</strong>，完成<strong>关键字</strong>的区分。</li>
+</ol>
+<h1 id="27-符号表">2.7 符号表</h1>
+<p><strong>符号表</strong>是用来存储源文件信息的数据结构。</p>
+<p>对于不同的作用域，可能会有相同名称的标识符，
+这种情况可以为每个域构建一个<strong>符号表</strong>来解决。
+一是可以以堆栈的形式不断的为之前的<strong>符号表</strong>打patch的形式；
+另一种是可以维持多个<strong>符号表</strong>之间的变更，
+在切换<strong>符号表</strong>时，应用或恢复这些变更。</p>
+<h1 id="28-中间代码生成">2.8 中间代码生成</h1>
+<p>中间代码主要有两种形式：</p>
+<ol>
+<li>树：<strong>语法分析树</strong>和<strong>抽象语法树</strong></li>
+<li>线性表示：比如<strong>三地址代码</strong></li>
+</ol>
+<h2 id="构造抽象语法树">构造抽象语法树</h2>
+<p>最基本的，
+为每一种<strong>语法结构</strong> <em>(statement construct)</em>
+在<strong>语法定义</strong> <em>(abstract syntax)</em> 中定义一个<strong>操作符</strong> <em>(operator)</em> 。
+随后，实现上为每一个<strong>操作符</strong>定义一个<code>Node</code>的子类，
+这意味着这些<strong>操作符</strong>的类会被用来构造抽象语法树。
+特别的，有一些特别类型的子类用来表示某些非终结符，
+如<code>Seq</code>表示<code>Stmts</code>，是<code>Stmt</code>的子类，而两者都继承了<code>Node</code>的子类。
+对于多个语句构成的语法块，
+在<strong>语法树</strong>中并无特别的区别，
+可以通过构造一个<strong>语法块</strong>的类来处理。</p>
+<h2 id="静态检查">静态检查</h2>
+<p>静态检查包括<strong>语法检查</strong>和<strong>类型检查</strong>，
+其中，<strong>类型检查</strong>会检查每个操作符的操作数数量和类型是否正确。</p>
+<ul>
+<li>
+<p>左值右值检查</p>
+</li>
+<li>
+<p>类型检查 <em>Type Checking</em></p>
+<p>类型检查帮助确定一个程序结构的类型是否符合上下文的需要。
+引出两个概念<strong>自动类型转换</strong> <em>(coercion)</em> 和 <strong>重载</strong> <em>(overloading)</em> 。</p>
+</li>
+</ul>
+<h2 id="三地址代码-three-address-code">三地址代码 Three-Address Code</h2>
+<p><strong>三地址代码</strong>是形如：</p>
+<p>$$
+x = y\ \textbf{op}\ z
+$$</p>
+<p>的表达式。
+其中，$x,y,z$是名称、常量或编译器生成的临时变量；
+$\textbf{op}$表示<strong>操作符</strong> <em>(operator)</em>。</p>
+<h3 id="语句-statements-的翻译">语句 <em>(Statements)</em> 的翻译</h3>
+<p>翻译语句比较重要的一点是控制流的跳转，
+可以通过定义一种<strong>三地址代码</strong>来处理：</p>
+<p>$$
+ifFalse\ x\ goto\ after
+$$</p>
+<h3 id="表达式-expressions-的翻译">表达式 <em>(Expressions)</em> 的翻译</h3>
+<p>除去控制代码流转的部分，大部分便是<strong>表达式</strong>。
+<strong>表达式</strong>的翻译包括二目运算符、数组的访问和赋值以及包含常量的计算。</p>
+<p>对于<strong>表达式</strong>基本的逻辑是转换成两个操作数的运算，
+有一些情况比较特别：</p>
+<ol>
+<li>对于常量或标识符，不需要做特殊的处理。</li>
+<li>需要区分左值右值。
+<ol>
+<li>普通的标识符没有特别的区别。</li>
+<li>对于数组，分别生成<code>Access</code>和<code>Assign</code>两种节点，对应数组元素的左值和右值。</li>
+</ol>
+</li>
+</ol>
+<h1 id="参考">参考</h1>
+<ul>
+<li><a href="https://web.stanford.edu/class/archive/cs/cs143/cs143.1128/handouts/160%20Syntax-Directed%20Translation.pdf">对于语法制导翻译的一些介绍</a></li>
+</ul>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-05-31
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/compilers-book/">compilers-book</a>
+          <a href="/tags/book/">book</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/other/realme_v15_unlock_bl/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">Realme V15解锁bootloader并刷入TWRP</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/compile/compilers/1/">
+            <span class="next-text nav-default">编译原理 第一章 笔记</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-05-31 23:13:00 \u002b0800 \u002b0800',
+        title: '编译原理 第二章 笔记',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

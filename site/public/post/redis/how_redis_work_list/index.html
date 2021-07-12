@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>列表相关的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="redis列表相关指令的具体实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_list/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="列表相关的实现" />
+<meta property="og:description" content="redis列表相关指令的具体实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_list/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-22T23:26:48&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-22T23:26:48&#43;08:00" />
+
+<meta itemprop="name" content="列表相关的实现">
+<meta itemprop="description" content="redis列表相关指令的具体实现。"><meta itemprop="datePublished" content="2020-11-22T23:26:48&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-22T23:26:48&#43;08:00" />
+<meta itemprop="wordCount" content="2289">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="列表相关的实现"/>
+<meta name="twitter:description" content="redis列表相关指令的具体实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">列表相关的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-22 </span>
+        
+          <span class="more-meta"> 约 2289 字 </span>
+          <span class="more-meta"> 预计阅读 5 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#lpushrpushlpushxrpushx"><code>LPUSH</code>/<code>RPUSH</code>/<code>LPUSHX</code>/<code>RPUSHX</code></a></li>
+    <li><a href="#linsert"><code>LINSERT</code></a></li>
+    <li><a href="#lpoprpopblpopbrpop"><code>LPOP</code>/<code>RPOP</code>/<code>BLPOP</code>/<code>BRPOP</code></a></li>
+    <li><a href="#rpoplpushbrpoplpush"><code>RPOPLPUSH</code>/<code>BRPOPLPUSH</code></a></li>
+    <li><a href="#llen"><code>LLEN</code></a></li>
+    <li><a href="#lindex"><code>LINDEX</code></a></li>
+    <li><a href="#lset"><code>LSET</code></a></li>
+    <li><a href="#lrange"><code>LRANGE</code></a></li>
+    <li><a href="#ltrim"><code>LTRIM</code></a></li>
+    <li><a href="#lpos"><code>LPOS</code></a></li>
+    <li><a href="#lrem"><code>LREM</code></a></li>
+    <li><a href="#sort"><code>SORT</code></a>
+      <ul>
+        <li><a href="#参考">参考</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>redis列表相关指令的具体实现。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p>分类按照命令表的flag来确定，列表的是包含<code>@list</code>标签的指令。</p>
+<p><em>基于redis 6.0</em></p>
+<h1 id="数据结构">数据结构</h1>
+<p>讨论具体接口的实现之前，我想简单介绍下redis用来实现列表相关的数据结构。</p>
+<p>可以从PUSH类的接口的具体的实现函数<code>pushGenericCommand</code>看到，
+如果之前没有具体的值，那么会调用<code>createQuicklistObject</code>来创建一个快速列表对象。</p>
+<p>大概的看了下，似乎没再使用压缩列表了。</p>
+<p>对于快速列表可以看之前的<a href="/post/redis/data_struct/#快速列表-quicklist">文章</a>有简单的介绍。</p>
+<h1 id="lpushrpushlpushxrpushx"><code>LPUSH</code>/<code>RPUSH</code>/<code>LPUSHX</code>/<code>RPUSHX</code></h1>
+<p>两个不带X的指令实现从头/尾插入数据。
+具体的实施由<code>pushGenericCommand</code>完成。</p>
+<p>函数中首先查询是否有目标的值，
+如果没有使用<code>createQuicklistObject</code>和<code>dbAdd</code>来插入。</p>
+<p>随后遍历参数，依次调用<code>listTypePush</code>来插入对象。
+函数的实现最终依赖快速列表的接口。</p>
+<p>然后写入列表剩余的长度。</p>
+<p>最后触发事件。</p>
+<p>对于带X的两个指令基于<code>pushxGenericCommand</code>实现，
+与前面两个指令的区别在于如果不存在队列，那么就不会创建，且直接返回0.</p>
+<h1 id="linsert"><code>LINSERT</code></h1>
+<p><strong>O(n)</strong></p>
+<p>利用<code>listTypeInitIterator</code>获得列表遍历的迭代器，
+迭代并用<code>listTypeEqual</code>与参数中的<code>pivot</code>比较，
+查找到位置后利用<code>listTypeInsert</code>进行插入。</p>
+<p>返回结果，-1没插入，成功返回列表长度。</p>
+<h1 id="lpoprpopblpopbrpop"><code>LPOP</code>/<code>RPOP</code>/<code>BLPOP</code>/<code>BRPOP</code></h1>
+<p>对于POP类型的指令分为阻塞与非阻塞两种。</p>
+<p>非阻塞的基于<code>popGenericCommand</code>实现。</p>
+<p>通过<code>listTypePop</code>返回结果，
+如果为空，返回null，否则写入返回值并触发事件。</p>
+<p>阻塞模式基于<code>blockingPopGenericCommand</code>实现。
+函数按照目标列表有数据或无数据来采取不同的行为。
+对于列表中有数据的情况，阻塞不再有意义，
+便使用类似非阻塞的实现，特别的，处理过程会将指令改写为非阻塞的。
+如果列表为空，就会利用<code>blockForKeys</code>来阻塞在列表上。</p>
+<p>有意思的一个点是，列表为空时会删除这个键值对，
+就可以按照等待这个键来实现阻塞。</p>
+<h1 id="rpoplpushbrpoplpush"><code>RPOPLPUSH</code>/<code>BRPOPLPUSH</code></h1>
+<p>非阻塞模式的指令，通过<code>listTypePop</code>获取一个数据。
+然后用<code>rpoplpushHandlePush</code>来压到需要的列表。</p>
+<p><code>rpoplpushHandlePush</code>的内容比较清晰，如果目标列表不存在，那么创建，
+然后利用<code>listTypePush</code>插入数据。最后触发事件，写入结果。</p>
+<p>最后检查如果列表为空，那么删除键。</p>
+<p>阻塞模式的实现与之前的<code>BLPOP</code>的实现类似，
+依赖<code>blockForKeys</code>来实现阻塞，
+区别在于会写入之前没有的<code>target</code>字段来表明插入需要放在哪个键中。</p>
+<h1 id="llen"><code>LLEN</code></h1>
+<p>乏善可陈，直接返回列表长度。</p>
+<h1 id="lindex"><code>LINDEX</code></h1>
+<p>调用<code>quicklistIndex</code>来实现核心逻辑。</p>
+<p>首先先找到在哪个节点：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">while</span> <span class="p">(</span><span class="n">likely</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="p">{</span> <span class="c1">// n是快速列表的节点
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">((</span><span class="n">accum</span> <span class="cm">/* 之前遍历过的数量 */</span> <span class="o">+</span> <span class="n">n</span><span class="o">-&gt;</span><span class="n">count</span> <span class="cm">/* 计算加上这个节点的值的数量 */</span> <span class="p">)</span> <span class="o">&gt;</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">break</span><span class="p">;</span> <span class="c1">// 超过目标index，意味着目标在这个节点里
+</span><span class="c1"></span>  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">D</span><span class="p">(</span><span class="s">&#34;Skipping over (%p) %u at accum %lld&#34;</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="o">-&gt;</span><span class="n">count</span><span class="p">,</span>
+      <span class="n">accum</span><span class="p">);</span>
+    <span class="n">accum</span> <span class="o">+=</span> <span class="n">n</span><span class="o">-&gt;</span><span class="n">count</span><span class="p">;</span> <span class="c1">// 迭代计数
+</span><span class="c1"></span>    <span class="n">n</span> <span class="o">=</span> <span class="n">forward</span> <span class="o">?</span> <span class="n">n</span><span class="o">-&gt;</span><span class="nl">next</span> <span class="p">:</span> <span class="n">n</span><span class="o">-&gt;</span><span class="n">prev</span><span class="p">;</span> <span class="c1">// 按照方向迭代
+</span><span class="c1"></span>  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后在节点里查找：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">quicklistDecompressNodeForUse</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">node</span><span class="p">);</span> <span class="c1">// 解压缩中间节点
+</span><span class="c1">// 在压缩列表中查找
+</span><span class="c1">// 实现比较清除，按照压缩列表的格式来处理
+</span><span class="c1"></span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">zi</span> <span class="o">=</span> <span class="n">ziplistIndex</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">node</span><span class="o">-&gt;</span><span class="n">zl</span><span class="p">,</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">offset</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这个指令的复杂度是O(n)，但是系数较小。</p>
+<h1 id="lset"><code>LSET</code></h1>
+<p>指令核心由<code>quicklistReplaceAtIndex</code>实现，
+首先用<code>quicklistIndex</code>确定快速列表的节点，
+这个时候得到了对应的一个压缩表，
+接下来就用<code>ziplistDelete</code>和<code>ziplistInsert</code>替换对应值。</p>
+<h1 id="lrange"><code>LRANGE</code></h1>
+<p>利用迭代器去遍历，这个过程没有什么特别的。</p>
+<p>利用<code>listTypeInitIterator</code>生成从指定位置开始迭代的迭代器。
+最终落到快速列表的<code>quicklistGetIteratorAtIdx</code>上：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">quicklistIter</span> <span class="o">*</span><span class="nf">quicklistGetIteratorAtIdx</span><span class="p">(</span><span class="k">const</span> <span class="n">quicklist</span> <span class="o">*</span><span class="n">quicklist</span><span class="p">,</span>
+                                         <span class="k">const</span> <span class="kt">int</span> <span class="n">direction</span><span class="p">,</span>
+                                         <span class="k">const</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">idx</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">quicklistEntry</span> <span class="n">entry</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">quicklistIndex</span><span class="p">(</span><span class="n">quicklist</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">entry</span><span class="p">))</span> <span class="p">{</span> <span class="c1">// 确定具体的节点
+</span><span class="c1"></span>        <span class="c1">// 构建迭代器
+</span><span class="c1"></span>        <span class="n">quicklistIter</span> <span class="o">*</span><span class="n">base</span> <span class="o">=</span> <span class="n">quicklistGetIterator</span><span class="p">(</span><span class="n">quicklist</span><span class="p">,</span> <span class="n">direction</span><span class="p">);</span>
+        <span class="n">base</span><span class="o">-&gt;</span><span class="n">zi</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+        <span class="n">base</span><span class="o">-&gt;</span><span class="n">current</span> <span class="o">=</span> <span class="n">entry</span><span class="p">.</span><span class="n">node</span><span class="p">;</span>
+        <span class="n">base</span><span class="o">-&gt;</span><span class="n">offset</span> <span class="o">=</span> <span class="n">entry</span><span class="p">.</span><span class="n">offset</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">base</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="ltrim"><code>LTRIM</code></h1>
+<p>核心是利用快速列表的<code>quicklistDelRange</code>接口移除前后的其他数据。</p>
+<h1 id="lpos"><code>LPOS</code></h1>
+<pre><code class="language-redis" data-lang="redis">LPOS key element [RANK rank] [COUNT num-matches] [MAXLEN len]
+</code></pre><ul>
+<li>返回element的位置</li>
+<li>返回第rank个匹配的位置</li>
+<li>返回num-matches个答案</li>
+<li>扫描最多len个元素，0扫全表</li>
+</ul>
+<p>实现显然可以简单的通过迭代器来完成。</p>
+<h1 id="lrem"><code>LREM</code></h1>
+<p>实现显然可以简单的通过迭代器来查找目标对象，
+随后调用<code>listTypeDelete</code>移除。</p>
+<h1 id="sort"><code>SORT</code></h1>
+<p><strong>O(N+Mlog(M))</strong> N是列表中的元素数量，M是要返回的数量。</p>
+<pre><code class="language-redis" data-lang="redis">SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC|DESC] [ALPHA] [STORE destination]
+</code></pre><ul>
+<li>ALPHA 按照字典序排序</li>
+<li>LIMIT offset count 类似SQL，表示从offset开始，查询count个</li>
+<li>BY pattern 指令按照pattern和列表中元素的值，生成key，然后按照这个key存储的值作为排序的依据进行排序</li>
+<li>GET pattern 指令会返回按照pattern和列表中元素的值，生成key，然后按照排序的结果依序返回生成的key对应的值</li>
+</ul>
+<p>首先解析请求参数。</p>
+<p>随后按照不同的类型（列表/集合/有续集合），读取出容器中的数据。这部分有一些不需要排序情况下的fast-path，暂且略过。</p>
+<p>获取容器中的数据后，按照不同的参数，去获取用来排序的值：</p>
+<ul>
+<li>设置了<code>BY pattern</code>，使用<code>lookupKeyByPattern</code>来构建键并查找对应的值。</li>
+</ul>
+<p>然后就是排序，对于要全部排序的采用<code>qsort</code>；
+对于部分排序使用redis自己实现的<code>pqsort</code>
+(可以看<a href="/post/redis/redis_pqsort/">另一篇文章</a>简单分析了具体的实现)。</p>
+<p>最后是返回结果。
+没有制定<code>GET</code>的话，直接将排序值返回即可；
+否则需要利用<code>lookupKeyByPattern</code>来查找需要的值。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://redis.io/commands/sort">redis sort</a></li>
+</ul>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-22
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/redis_pqsort/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis中pqsort的简单分析</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/memo/abc/">
+            <span class="next-text nav-default">基础知识备忘</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-22 23:26:48 \u002b0800 \u002b0800',
+        title: '列表相关的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>realme v15 on blog</title>
+    <link>https://blog.er1c.dev/tags/realme-v15/</link>
+    <description>Recent content in realme v15 on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 03 Jun 2021 00:39:43 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/realme-v15/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Realme V15解锁bootloader并刷入TWRP</title>
+      <link>https://blog.er1c.dev/post/other/realme_v15_unlock_bl/</link>
+      <pubDate>Thu, 03 Jun 2021 00:39:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/other/realme_v15_unlock_bl/</guid>
+      <description>&lt;p&gt;昨日购入了一台realme v15，
+搜索了之后发现官方没有放出这个型号的解锁BL工具，
+一番尝试之后，
+幸运的解锁了BL，刷入TWRP。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;操作有风险，本文不保证正确性。&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

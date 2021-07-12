@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>go-src on blog</title>
+    <link>https://blog.er1c.dev/tags/go-src/</link>
+    <description>Recent content in go-src on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 11 May 2021 16:30:05 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/go-src/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>go channel原理分析</title>
+      <link>https://blog.er1c.dev/post/language/go/chan/</link>
+      <pubDate>Tue, 11 May 2021 16:30:05 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/language/go/chan/</guid>
+      <description>&lt;p&gt;从功能出发，分析channel的原理。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>go内存模型与sync包</title>
+      <link>https://blog.er1c.dev/post/language/go/memory_model/</link>
+      <pubDate>Sat, 01 May 2021 03:06:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/language/go/memory_model/</guid>
+      <description>&lt;p&gt;go中的Happen-before保证与&lt;code&gt;sync&lt;/code&gt;包原理的简单分析。&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

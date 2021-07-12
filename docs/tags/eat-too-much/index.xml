@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>eat-too-much on blog</title>
+    <link>https://blog.er1c.dev/tags/eat-too-much/</link>
+    <description>Recent content in eat-too-much on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 16 Apr 2021 17:08:35 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/eat-too-much/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>[吃太饱]diff3</title>
+      <link>https://blog.er1c.dev/post/eat_too_much/diff3/</link>
+      <pubDate>Fri, 16 Apr 2021 17:08:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/eat_too_much/diff3/</guid>
+      <description>&lt;p&gt;最近在尝试看一些理论的材料然后落地其中的设计。&lt;/p&gt;
+&lt;p&gt;这种事情属实费力（因为能力太差）还没有收益（已经有完美的落地方案了），
+所以打算开启一个新的系列——《吃太多》来记录学习经过。&lt;/p&gt;
+&lt;p&gt;通过这一篇可以了解到：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;diff3是什么&lt;/li&gt;
+&lt;li&gt;提供的保证和一些性质&lt;/li&gt;
+&lt;li&gt;一个简单的diff3实现&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

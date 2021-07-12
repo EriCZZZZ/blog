@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>memo on blog</title>
+    <link>https://blog.er1c.dev/tags/memo/</link>
+    <description>Recent content in memo on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Mon, 12 Jul 2021 22:04:54 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/memo/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Goland异常提示语法错误</title>
+      <link>https://blog.er1c.dev/post/daily_problems/goland_unexpected_syntax_error/</link>
+      <pubDate>Mon, 12 Jul 2021 22:04:54 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/daily_problems/goland_unexpected_syntax_error/</guid>
+      <description>有的时候语法是正确的， 但Goland仍然提示语法错误， 可以尝试「File」-&amp;gt;「Invalidate Caches」选项来移除缓存和索引</description>
+    </item>
+    
+    <item>
+      <title>hugo的日常使用</title>
+      <link>https://blog.er1c.dev/post/memo/hugo/</link>
+      <pubDate>Tue, 30 Mar 2021 19:47:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/hugo/</guid>
+      <description>因为下划线导致latex公式渲染不正确/渲染成斜体 有些hugo的主题会带有latex的渲染插件， 这些插件通常用$作为行内公式的标记符。 公式中</description>
+    </item>
+    
+    <item>
+      <title>基础知识备忘</title>
+      <link>https://blog.er1c.dev/post/memo/abc/</link>
+      <pubDate>Sun, 22 Nov 2020 23:14:59 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/abc/</guid>
+      <description>字节序 大端：数据的高字节放在低地址 网络序 小端：数据的高字节放在高地址</description>
+    </item>
+    
+    <item>
+      <title>缩写备忘录</title>
+      <link>https://blog.er1c.dev/post/memo/abbr/</link>
+      <pubDate>Sun, 22 Nov 2020 23:13:13 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/abbr/</guid>
+      <description>MSB Most Significant Bit 最高位 WAL Write Ahead Log 预写日志 MVP minimum viable product 最小可用产品。指一种产品版本，只实现必要的功能。</description>
+    </item>
+    
+    <item>
+      <title>MySQL相关备忘录</title>
+      <link>https://blog.er1c.dev/post/memo/mysql/</link>
+      <pubDate>Wed, 28 Oct 2020 19:02:37 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/mysql/</guid>
+      <description>如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6 启动mysql失败的时候如何排查？ 如何在Ubuntu 20上使用apt安装低版本m</description>
+    </item>
+    
+    <item>
+      <title>备忘录</title>
+      <link>https://blog.er1c.dev/memo/</link>
+      <pubDate>Fri, 21 Aug 2020 22:31:07 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/memo/</guid>
+      <description>网站 正则表达式在线检查 Nginx在线检查 图书 MDN PlantUML Linux源码在线查看 在线文档 Linux syscalls.h 各种备忘集合 正则表达式速查 缩写 基础知识</description>
+    </item>
+    
+    <item>
+      <title>正则表达式速查</title>
+      <link>https://blog.er1c.dev/post/memo/regex/</link>
+      <pubDate>Fri, 21 Aug 2020 20:31:59 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/regex/</guid>
+      <description>基础 元字符 \b 匹配单词分割处 . 匹配非换行符所有字符 \w 匹配文字字符 \s 空白字符 \d 数字 ^ 开头 $ 结尾 转义 使用 \ 进行转义 重复 均指重复之前一个组或字符类或</description>
+    </item>
+    
+  </channel>
+</rss>

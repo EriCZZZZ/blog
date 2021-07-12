@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>哈希表的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="redis哈希表相关指令的具体实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_hash/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="哈希表的实现" />
+<meta property="og:description" content="redis哈希表相关指令的具体实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_hash/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-30T21:52:00&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-30T21:52:00&#43;08:00" />
+
+<meta itemprop="name" content="哈希表的实现">
+<meta itemprop="description" content="redis哈希表相关指令的具体实现。"><meta itemprop="datePublished" content="2020-11-30T21:52:00&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-30T21:52:00&#43;08:00" />
+<meta itemprop="wordCount" content="917">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="哈希表的实现"/>
+<meta name="twitter:description" content="redis哈希表相关指令的具体实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">哈希表的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-30 </span>
+        
+          <span class="more-meta"> 约 917 字 </span>
+          <span class="more-meta"> 预计阅读 2 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#hsethmset"><code>HSET</code>/<code>HMSET</code></a></li>
+    <li><a href="#hsetnx"><code>HSETNX</code></a></li>
+    <li><a href="#hgethmget"><code>HGET</code>/<code>HMGET</code></a></li>
+    <li><a href="#hincrbyhincrbyfloat"><code>HINCRBY</code>/<code>HINCRBYFLOAT</code></a></li>
+    <li><a href="#hdel"><code>HDEL</code></a></li>
+    <li><a href="#hlen"><code>HLEN</code></a></li>
+    <li><a href="#hstrlen"><code>HSTRLEN</code></a></li>
+    <li><a href="#hkeyshvalshgetall"><code>HKEYS</code>/<code>HVALS</code>/<code>HGETALL</code></a></li>
+    <li><a href="#hexists"><code>HEXISTS</code></a></li>
+    <li><a href="#hscan"><code>HSCAN</code></a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>redis哈希表相关指令的具体实现。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p>分类按照命令表的flag来确定，哈希表的是包含<code>@hash</code>标签的指令。</p>
+<p><em>基于redis 6.0</em></p>
+<h1 id="数据结构">数据结构</h1>
+<p>哈希表的实现也是有两种数据结构，
+在数据量小的时候，
+是压缩列表，
+数据量大的时候，就转化成哈希表。</p>
+<p>是否转换有两种情况：</p>
+<ol>
+<li>元素的数量大于<code>hash_max_ziplist_entries</code>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">start</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">sdsEncodedObject</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&amp;&amp;</span>
+    <span class="n">sdslen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">server</span><span class="p">.</span><span class="n">hash_max_ziplist_value</span><span class="p">)</span> <span class="c1">// 这里进行的比较
+</span><span class="c1"></span>  <span class="p">{</span>
+    <span class="n">hashTypeConvert</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">OBJ_ENCODING_HT</span><span class="p">);</span>
+    <span class="k">break</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>元素的长度大于<code>hash_max_ziplist_value</code>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">if</span> <span class="p">(</span><span class="n">hashTypeLength</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">server</span><span class="p">.</span><span class="n">hash_max_ziplist_entries</span><span class="p">)</span>
+  <span class="n">hashTypeConvert</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">OBJ_ENCODING_HT</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ol>
+<p>这两种情况也很合理，避免了一个元素过长导致遍历的时间长的问题。</p>
+<p>两种数据结构的简单介绍可以看下<a href="/post/redis/data_struct/#压缩列表">压缩列表</a>或<a href="/post/redis/data_struct/#哈希表">哈希表</a>。</p>
+<p><strong>对于压缩列表，存储是按照键、值、键、值这样存储的。</strong></p>
+<h1 id="hsethmset"><code>HSET</code>/<code>HMSET</code></h1>
+<p>哈希表的实现比较简单，
+首先查找目标key对应的<code>entry</code>，
+如果没有找到，就简单的增加对应的<code>entry</code>。</p>
+<p>压缩列表要复杂些，
+首先要遍历来尝试找出是否有目标键值对，
+如果没有，那么就在尾部增加键、值；
+如果有，需要将原来的值删掉，然后将新值插入到旧值的地方。
+压缩列表的插入操作十分的繁杂，需要考虑空间、节点之间的关系等。</p>
+<p>通过循环完成多个键值的插入。</p>
+<h1 id="hsetnx"><code>HSETNX</code></h1>
+<p>先检查键值是否不存在，然后调用<code>HSET</code>用过的<code>hashTypeSet</code>插入。</p>
+<h1 id="hgethmget"><code>HGET</code>/<code>HMGET</code></h1>
+<p>没有什么特别的地方，简单的调用对应数据结构的get方法，返回结果。</p>
+<p>批量版本的通过循环来完成。</p>
+<h1 id="hincrbyhincrbyfloat"><code>HINCRBY</code>/<code>HINCRBYFLOAT</code></h1>
+<p>是<code>INCRBY</code>的哈希表版，通过组合<code>HGET</code>、加法、<code>HSET</code>来完成。</p>
+<p>浮点数版本类似。</p>
+<h1 id="hdel"><code>HDEL</code></h1>
+<p>实现上就是通过调用对应的删除函数来删除键值对。
+对于删除后为空的情况，会把整个哈希表移除。</p>
+<h1 id="hlen"><code>HLEN</code></h1>
+<p>返回长度，没有什么特别的。</p>
+<h1 id="hstrlen"><code>HSTRLEN</code></h1>
+<p><code>STRLEN</code>的哈希表版本，查询到对应的值后，返回结果。</p>
+<h1 id="hkeyshvalshgetall"><code>HKEYS</code>/<code>HVALS</code>/<code>HGETALL</code></h1>
+<p>三者使用<code>genericHgetallCommand</code>来实现，
+通过传入不同的flag来控制返回那些值。</p>
+<p>遍历的过程比较简单，生成对应的迭代器，然后遍历即可。</p>
+<h1 id="hexists"><code>HEXISTS</code></h1>
+<p>查找对应的key是否存在，实现上利用了get类型的函数，根据是否读取到返回结果。</p>
+<h1 id="hscan"><code>HSCAN</code></h1>
+<p>最终落到<code>scanGenericCommand</code>上来完成。
+可以看下这篇文章<a href="/post/redis/how_redis_work_common/#scan相关的实现">scan相关的实现</a>。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-30
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/http/websocket/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">学习Websocket</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/how_redis_work_sortedset/">
+            <span class="next-text nav-default">有序集合的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-30 21:52:00 \u002b0800 \u002b0800',
+        title: '哈希表的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

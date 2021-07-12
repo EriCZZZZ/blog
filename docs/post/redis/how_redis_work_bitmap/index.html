@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>位图的基本实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="redis位图相关指令的具体实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="位图的基本实现" />
+<meta property="og:description" content="redis位图相关指令的具体实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-22T00:27:36&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-22T00:27:36&#43;08:00" />
+
+<meta itemprop="name" content="位图的基本实现">
+<meta itemprop="description" content="redis位图相关指令的具体实现。"><meta itemprop="datePublished" content="2020-11-22T00:27:36&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-22T00:27:36&#43;08:00" />
+<meta itemprop="wordCount" content="2567">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="位图的基本实现"/>
+<meta name="twitter:description" content="redis位图相关指令的具体实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">位图的基本实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-22 </span>
+        
+          <span class="more-meta"> 约 2567 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#setbitgetbit"><code>SETBIT</code>/<code>GETBIT</code></a></li>
+    <li><a href="#bitfieldbitfield_ro"><code>BITFIELD</code>/<code>BITFIELD_RO</code></a></li>
+    <li><a href="#bitop"><code>BITOP</code></a></li>
+    <li><a href="#bitcount"><code>BITCOUNT</code></a></li>
+    <li><a href="#bitpos"><code>BITPOS</code></a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>redis位图相关指令的具体实现。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p>分类按照命令表的flag来确定，位图类的是包含<code>@bitmap</code>标签的指令。</p>
+<p><em>基于redis 6.0</em></p>
+<h1 id="setbitgetbit"><code>SETBIT</code>/<code>GETBIT</code></h1>
+<p>写入复杂一点：</p>
+<ul>
+<li>
+<p>首先通过<code>getBitOffsetFromArgument</code>和<code>getLongFromObjectOrReply</code>来获取偏移量和要设置的值。</p>
+</li>
+<li>
+<p>然后通过<code>lookupStringForBitCommand</code>获取目标对象，函数中首先确定是否存在，相应的补全或新建出来需要长度的字符串，用零值填充。</p>
+</li>
+<li>
+<p>通过offset来计算出来第几个字符和在字符中的偏移量，计算修改后的字符值，设置。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="cm">/* Get current values */</span>
+<span class="n">byte</span> <span class="o">=</span> <span class="n">bitoffset</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="p">;</span> <span class="c1">// 除8 获得要修改的位在那个字符上
+</span><span class="c1"></span><span class="n">byteval</span> <span class="o">=</span> <span class="p">((</span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">)[</span><span class="n">byte</span><span class="p">];</span> 
+<span class="n">bit</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">-</span> <span class="p">(</span><span class="n">bitoffset</span> <span class="o">&amp;</span> <span class="mh">0x7</span><span class="p">);</span> <span class="c1">// (0x7 -&gt; 111b) 获得8位里面的偏移量，然后反转顺序
+</span><span class="c1"></span><span class="n">bitval</span> <span class="o">=</span> <span class="n">byteval</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">bit</span><span class="p">);</span> <span class="c1">// 存储之前的值
+</span><span class="c1"></span>
+<span class="cm">/* Update byte with new bit value and return original value */</span>
+<span class="n">byteval</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">bit</span><span class="p">);</span> <span class="c1">// 清除那一位
+</span><span class="c1"></span><span class="n">byteval</span> <span class="o">|=</span> <span class="p">((</span><span class="n">on</span> <span class="o">&amp;</span> <span class="mh">0x1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">bit</span><span class="p">);</span> <span class="c1">// 根据入参来设置
+</span><span class="c1"></span><span class="p">((</span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">)[</span><span class="n">byte</span><span class="p">]</span> <span class="o">=</span> <span class="n">byteval</span><span class="p">;</span> <span class="c1">// 保存
+</span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>触发事件，写入结果，之前是1返回1，是0返回0。</p>
+</li>
+</ul>
+<p>读取比较简单，通过<code>getBitOffsetFromArgument</code>获取对应的值，
+然后使用与设置的相同的方法，定位到对应的位置，返回结果。
+特别的，如果位数超过长度，那么返回0。</p>
+<h1 id="bitfieldbitfield_ro"><code>BITFIELD</code>/<code>BITFIELD_RO</code></h1>
+<p><strong>需要注意跨字节的计算，如果对齐时，采用的是大端序。</strong></p>
+<p>两个命令最终落到<code>bitfieldGeneric</code>上完成执行。</p>
+<p>首先是一个循环，遍历了所有的参数：</p>
+<ul>
+<li>获取指令，如果不合规返回错误</li>
+<li>获取参数，如果不合规返回错误</li>
+<li>保存指令和参数到<code>ops</code>，是一个<code>bitfieldOp</code>的数组
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">struct</span> <span class="n">bitfieldOp</span> <span class="p">{</span>
+  <span class="kt">uint64_t</span> <span class="n">offset</span><span class="p">;</span>    <span class="cm">/* Bitfield offset. */</span>
+  <span class="kt">int64_t</span> <span class="n">i64</span><span class="p">;</span>        <span class="cm">/* Increment amount (INCRBY) or SET value */</span>
+  <span class="kt">int</span> <span class="n">opcode</span><span class="p">;</span>         <span class="cm">/* Operation id. */</span>
+  <span class="kt">int</span> <span class="n">owtype</span><span class="p">;</span>         <span class="cm">/* Overflow type to use. */</span>
+  <span class="kt">int</span> <span class="n">bits</span><span class="p">;</span>           <span class="cm">/* Integer bitfield bits width. */</span>
+  <span class="kt">int</span> <span class="n">sign</span><span class="p">;</span>           <span class="cm">/* True if signed, otherwise unsigned op. */</span>
+<span class="p">};</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>随后用<code>lookupStringForBitCommand</code>获取要操作的键值对。</p>
+<p>然后是一个循环，遍历<code>ops</code>：</p>
+<ul>
+<li>如果是写操作(<code>SET</code>/<code>INCRBY</code>)，按照有符号和无符号进行类似的操作：
+<ul>
+<li>查找出原有的数值</li>
+<li>对<code>SET</code>/<code>INCRBY</code>采用对应的方式，计算出新的值</li>
+<li>写入数值</li>
+<li>返回结果</li>
+</ul>
+</li>
+<li>对于读<code>GET</code>，实现比较简单。比较有意思的是，首先会拷贝9字节（72位）的数据到本地缓存，便于处理。</li>
+</ul>
+<p>最后触发相应的事件，返回结果。</p>
+<h1 id="bitop"><code>BITOP</code></h1>
+<p><em>时间复杂度O(N)</em></p>
+<ol>
+<li>首先判断采取哪种运算，有意思的地方是，先比较第一位，符合后再比较了剩下的字符。</li>
+<li>随后获取每一个键对应的值，作简单的检查后，暂存起来</li>
+<li>如果有不位空的运算的值，那么进行运算。（对于快慢路径的分离，go中运用的也很多）</li>
+<li>判断如果对齐、长度超过4<em>long位、要操作的键小于等于16个，那么先走一个快速路径
+1. 依次遍历所有值，计算4</em>long位的结果
+1. 更新结果的指针位置、剩余要计算的长度，重新回到快速路径检查</li>
+<li>剩下还有一些需要继续计算的数据，比如值的长度更长、位数不足4*long等。循环按照字节递增，直到超过，<code>maxlen</code>（字节数）。超过目标位数来进行位运算不会影响结果。
+1. 依次遍历每个值
+<ol>
+<li>检查每个值的长度是否合规</li>
+<li>根据不同的运算，采取对应的操作</li>
+<li>设置字节到应有的位置</li>
+</ol>
+</li>
+<li>如果结果为空，那么尝试删除，并触发时间；否则通过<code>setKey</code>设置结果，并触发事件。</li>
+<li>返回结果的长度（字节数，不足一个字节的补足）</li>
+</ol>
+<h1 id="bitcount"><code>BITCOUNT</code></h1>
+<p>首先获取值，简单检查，比较简单。
+核心的计数功能由<code>redisPopcount</code>实现：</p>
+<ol>
+<li>首先把没有对齐到4字节的值，每字节的计算位数（使用预设的表）</li>
+<li>随后每次循环计算28字节的位数</li>
+<li>获取7个32位的变量<code>aux1</code>-<code>aux7</code></li>
+<li>计算这些变量的1的数量</li>
+<li>最后计算剩下的字节</li>
+</ol>
+<p>比较有意思的部分是计算28字节的1的数量。
+简单来说，通过若干步骤，依次获得每两位、每四位、每八位的数量，随后合并七个的数值的1数量的和。</p>
+<p>首先从两位开始，考虑两位有四种情况<code>11b/10b/01b/00b</code>，分别有2/1/1/0个1，
+特别地，对于高位为1的情况，都可以通过减1来获取“该两位有几个1”的结果；
+对于高位为0的情况，可以通过减0来获取。
+现在问题就转换成**“通过高位是否为1获取要减去1或0”**了。
+为了解决这个问题，可以将数值右移一位，并与<code>01b</code>进行与运算。*(高位为0使得前一组的低位的值无效)*
+现在再看代码就清晰了：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">aux1</span> <span class="o">=</span> <span class="n">aux1</span> <span class="o">-</span> <span class="p">((</span><span class="n">aux1</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x55555555</span><span class="p">);</span> <span class="c1">// 0x5 -&gt; 0101b
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在则需要统合四位一组的1的个数。
+考虑具体情况，每四位一组分为高低两部分，
+分别存储了两个1的个数，现在就需要将两部分的值加起来。
+这一部分简单的一些，分别对当前值用mask和位移来清空高低两部分，然后在相加即可。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// 0x3 -&gt; 0011b 可以将高位清除
+</span><span class="c1">// 第二部分将数值右移两位，然后与0x3与，
+</span><span class="c1">// 就将前一组的低位清除并将当前组的高位移动到低位上
+</span><span class="c1"></span><span class="n">aux1</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span> <span class="o">&amp;</span> <span class="mh">0x33333333</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="n">aux1</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x33333333</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>现在32位整数里，每四位的值为每四位的1的个数，
+最终的答案自然只需要两步：</p>
+<ol>
+<li>先将8组的数值相加</li>
+<li>随后将7个值的数值相加</li>
+</ol>
+<p>redis将这两步合并起来，简化了实现：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">bits</span> <span class="o">+=</span> <span class="p">(</span>
+  <span class="p">(</span>
+    <span class="p">((</span><span class="n">aux1</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span> <span class="o">+</span> <span class="c1">// 将每八位的数统合了起来
+</span><span class="c1"></span>    <span class="p">((</span><span class="n">aux2</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux2</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span> <span class="o">+</span>
+    <span class="p">((</span><span class="n">aux3</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux3</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span> <span class="o">+</span>
+    <span class="p">((</span><span class="n">aux4</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux4</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span> <span class="o">+</span>
+    <span class="p">((</span><span class="n">aux5</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux5</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span> <span class="o">+</span>
+    <span class="p">((</span><span class="n">aux6</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux6</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span> <span class="o">+</span>
+    <span class="p">((</span><span class="n">aux7</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux7</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="mh">0x0F0F0F0F</span><span class="p">)</span>
+  <span class="p">)</span> <span class="o">*</span> <span class="mh">0x01010101</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">24</span><span class="p">;</span> <span class="c1">// 这里先进行了乘法，对于高于32位的相当于溢出会被截断
+</span><span class="c1"></span>                         <span class="c1">// 右移24位相当于保留最高的八位(通过竖式不难看出)
+</span><span class="c1"></span>                         <span class="c1">// 高八位正好是划分的8位一组的四组的和，就是结果
+</span></code></pre></td></tr></table>
+</div>
+</div><h1 id="bitpos"><code>BITPOS</code></h1>
+<p><em>用来查询第一个0或1的位置</em></p>
+<p>核心实现通过<code>redisBitpos</code>来实现。</p>
+<p>首先按照<code>char</code>过滤没有对齐到<code>long</code>类型的部分，</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">skipval</span> <span class="o">=</span> <span class="n">bit</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="n">UCHAR_MAX</span><span class="p">;</span>
+<span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span> <span class="n">s</span><span class="p">;</span>
+<span class="n">found</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="k">while</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">c</span> <span class="o">&amp;</span> <span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">l</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">c</span> <span class="o">!=</span> <span class="n">skipval</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">c</span><span class="o">++</span><span class="p">;</span>
+    <span class="n">count</span><span class="o">--</span><span class="p">;</span>
+    <span class="n">pos</span> <span class="o">+=</span> <span class="mi">8</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>随后如果没有找到符合的部分，在按照<code>long</code>来依次过滤全不符合的数据。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="o">*</span><span class="p">)</span> <span class="n">c</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">found</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">skipval</span> <span class="o">=</span> <span class="n">bit</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="n">ULONG_MAX</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">l</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">l</span> <span class="o">!=</span> <span class="n">skipval</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+        <span class="n">l</span><span class="o">++</span><span class="p">;</span>
+        <span class="n">count</span> <span class="o">-=</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">l</span><span class="p">);</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">l</span><span class="p">)</span><span class="o">*</span><span class="mi">8</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>随后加载下一部分数据，并检查位置。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">l</span><span class="p">;</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">l</span><span class="p">);</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">word</span> <span class="o">&lt;&lt;=</span> <span class="mi">8</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">word</span> <span class="o">|=</span> <span class="o">*</span><span class="n">c</span><span class="p">;</span> <span class="c1">// 加载数据到word
+</span><span class="c1"></span>        <span class="n">c</span><span class="o">++</span><span class="p">;</span>
+        <span class="n">count</span><span class="o">--</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">bit</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">word</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="c1">// 如果不存在1，返回-1
+</span><span class="c1"></span>                                      <span class="c1">// 对于0，默认会填充0，所以认为不会有不存在的情况
+</span><span class="c1"></span>
+<span class="c1">// 构建一个最高位是1的值
+</span><span class="c1"></span><span class="n">one</span> <span class="o">=</span> <span class="n">ULONG_MAX</span><span class="p">;</span> <span class="cm">/* 所有位都是1 */</span>
+<span class="n">one</span> <span class="o">&gt;&gt;=</span> <span class="mi">1</span><span class="p">;</span>       <span class="cm">/* 右移1位，最高位填充0 */</span>
+<span class="n">one</span> <span class="o">=</span> <span class="o">~</span><span class="n">one</span><span class="p">;</span>      <span class="cm">/* 取反，获得需要的值 */</span>
+
+<span class="k">while</span><span class="p">(</span><span class="n">one</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 通过移动one中的1，来依次检测每一个位置
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(((</span><span class="n">one</span> <span class="o">&amp;</span> <span class="n">word</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="n">bit</span><span class="p">)</span> <span class="k">return</span> <span class="n">pos</span><span class="p">;</span>
+    <span class="n">pos</span><span class="o">++</span><span class="p">;</span> <span class="c1">// 每次移动增加位置
+</span><span class="c1"></span>    <span class="n">one</span> <span class="o">&gt;&gt;=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>最后返回结果。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-22
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/memo/abbr/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">缩写备忘录</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/how_redis_work_common/">
+            <span class="next-text nav-default">redis指令的实现-基础接口</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-22 00:27:36 \u002b0800 \u002b0800',
+        title: '位图的基本实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>集合的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="redis集合相关指令的具体实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_set/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="集合的实现" />
+<meta property="og:description" content="redis集合相关指令的具体实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_set/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-26T01:34:30&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-26T01:34:30&#43;08:00" />
+
+<meta itemprop="name" content="集合的实现">
+<meta itemprop="description" content="redis集合相关指令的具体实现。"><meta itemprop="datePublished" content="2020-11-26T01:34:30&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-26T01:34:30&#43;08:00" />
+<meta itemprop="wordCount" content="1943">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="集合的实现"/>
+<meta name="twitter:description" content="redis集合相关指令的具体实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">集合的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-26 </span>
+        
+          <span class="more-meta"> 约 1943 字 </span>
+          <span class="more-meta"> 预计阅读 4 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#一些普遍的设计思想">一些普遍的设计思想</a></li>
+    <li><a href="#saddsrem"><code>SADD</code>/<code>SREM</code></a></li>
+    <li><a href="#smove"><code>SMOVE</code></a></li>
+    <li><a href="#sismember"><code>SISMEMBER</code></a></li>
+    <li><a href="#scard"><code>SCARD</code></a></li>
+    <li><a href="#spop"><code>SPOP</code></a></li>
+    <li><a href="#srandmember"><code>SRANDMEMBER</code></a></li>
+    <li><a href="#sintersinterstoresmembers"><code>SINTER</code>/<code>SINTERSTORE</code>/<code>SMEMBERS</code></a></li>
+    <li><a href="#sunionsunionstore"><code>SUNION</code>/<code>SUNIONSTORE</code></a></li>
+    <li><a href="#sdiffsdiffstore"><code>SDIFF</code>/<code>SDIFFSTORE</code></a></li>
+    <li><a href="#sscan"><code>SSCAN</code></a></li>
+    <li><a href="#sort"><code>SORT</code></a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>redis集合相关指令的具体实现。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p>分类按照命令表的flag来确定，集合的是包含<code>@set</code>标签的指令。</p>
+<p><em>基于redis 6.0</em></p>
+<h1 id="数据结构">数据结构</h1>
+<p>集合有两种底层数据结构，第一种是
+<a href="/post/redis/data_struct/#整数集合">整数集合</a>
+或第二种是
+<a href="/post/redis/data_struct/#哈希表">哈希表</a>
+。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">robj</span> <span class="o">*</span><span class="nf">setTypeCreate</span><span class="p">(</span><span class="n">sds</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">isSdsRepresentableAsLongLong</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="nb">NULL</span><span class="p">)</span> <span class="o">==</span> <span class="n">C_OK</span><span class="p">)</span>
+    <span class="c1">// 最终由string2ll尝试转换来判断
+</span><span class="c1"></span>    <span class="k">return</span> <span class="n">createIntsetObject</span><span class="p">();</span> <span class="c1">// 整数集合
+</span><span class="c1"></span>  <span class="k">return</span> <span class="n">createSetObject</span><span class="p">();</span> <span class="c1">// 其实是初始化一个哈希表
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="一些普遍的设计思想">一些普遍的设计思想</h1>
+<p>类似于<code>list</code>类型，对于任何移除元素的指令，
+都会检查移除的是否是最后一个元素，
+如果是会删除对应的键值对来便于阻塞指令的实现。</p>
+<p>另外会将一些复杂的指令的事件由若干简单指令来替代。</p>
+<h1 id="saddsrem"><code>SADD</code>/<code>SREM</code></h1>
+<p><code>SADD</code>向集合中增加一个值，通过<code>setTypeAdd</code>来实现。
+特别的，如果对应的集合是空，那么初始化一个。
+初始化时会根据第一个参数是否是数字来决定使用整数集合或哈希表作为底层结构。
+另外，向底层是整数集合的集合插入非整数类型的值或集合中的元素数量过多时，
+会调用<code>setTypeConvert</code>来将底层的数据结构转换成哈希表。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/t_set.c#setTypeAdd
+</span><span class="c1"></span><span class="k">if</span> <span class="p">(</span><span class="n">isSdsRepresentableAsLongLong</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="o">&amp;</span><span class="n">llval</span><span class="p">)</span> <span class="o">==</span> <span class="n">C_OK</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">uint8_t</span> <span class="n">success</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">subject</span><span class="o">-&gt;</span><span class="n">ptr</span> <span class="o">=</span> <span class="n">intsetAdd</span><span class="p">(</span><span class="n">subject</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span><span class="n">llval</span><span class="p">,</span><span class="o">&amp;</span><span class="n">success</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">success</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 检查集合的大小是否过大，并尝试转换
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">intsetLen</span><span class="p">(</span><span class="n">subject</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">server</span><span class="p">.</span><span class="n">set_max_intset_entries</span><span class="p">)</span>
+      <span class="n">setTypeConvert</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span><span class="n">OBJ_ENCODING_HT</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+  <span class="c1">// 如果是整数集合且要插入不是整数，那么尝试转换
+</span><span class="c1"></span>  <span class="n">setTypeConvert</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span><span class="n">OBJ_ENCODING_HT</span><span class="p">);</span>
+
+  <span class="n">serverAssert</span><span class="p">(</span><span class="n">dictAdd</span><span class="p">(</span><span class="n">subject</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span><span class="n">sdsdup</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="nb">NULL</span><span class="p">)</span> <span class="o">==</span> <span class="n">DICT_OK</span><span class="p">);</span> <span class="c1">// 插入
+</span><span class="c1"></span>  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><code>SREM</code>利用<code>setTypeRemove</code>从集合中移除一个特定的元素。
+对于哈希表承载的情况，移除后会检查哈希表的负载，
+如果需要的话，调用<code>dictResize</code>来收缩。
+特别的，如果删除后集合为空，那么将该键删除。</p>
+<h1 id="smove"><code>SMOVE</code></h1>
+<p>命令先从<code>src</code>移除目标元素，如果成功移除，
+那么将元素调用<code>setTypeAdd</code>增加到<code>det</code>集合。
+在通知时，这个指令会触发<code>SREM</code>和<code>SADD</code>。</p>
+<h1 id="sismember"><code>SISMEMBER</code></h1>
+<p>通过<code>setTypeIsMember</code>来实现具体功能。
+对于哈希表类型，使用<code>dictFind</code>；
+对于整数集合，使用<code>intsetFind</code>。</p>
+<h1 id="scard"><code>SCARD</code></h1>
+<p>平平无奇，<code>setTypeSize</code>。</p>
+<h1 id="spop"><code>SPOP</code></h1>
+<p>首先利用<code>setTypeRandomElement</code>随即选取一个元素，
+然后利用<code>intsetRemove</code>或<code>setTypeRemove</code>来移除。</p>
+<p>随机依赖标准库的<code>random</code>(哈希表)或<code>rand</code>(整数集合)来实现。</p>
+<h1 id="srandmember"><code>SRANDMEMBER</code></h1>
+<p>如果没有指定数量，那么利用<code>setTypeRandomElement</code>来返回一个随机的元素**（但不删除）**。</p>
+<p>对于要返回多个的情况，使用的是<code>srandmemberWithCountCommand</code>，处理了正负参数的不同情况。
+如果是返回相同的元素（<code>count</code>是负数），通过多次调用<code>setTypeRandomElement</code>来实现；
+反之（<code>count</code>是正数），分为了三种情况来进行处理。
+简单看下<code>srandmemberWithCountCommand</code>的部分代码：</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+start
+if (可以返回重复的元素？) then (yes)
+  :调用相应次数的\nsetTypeRandomElement\n返回对应的元素;
+else (no)
+  if (集合的元素数量\n少于需要的数量？) then (yes)
+    :返回整个集合的元素;
+  else (no)
+    if (要返回的数量超过了\n集合数量的三分之一？) then(yes)
+      :通过迭代器将集合复制到\n辅助hash表中（顺便完成了去重）;
+      :通过dictGetRandomKey\n不断选取随机的元素删除，\n直到满足数量要求。;
+    else (no)
+      :随机选择值增加到\n辅助hash表中（去重），\n直到满足数量要求。;
+    endif
+  endif
+endif
+end
+@enduml
+</code></pre><p>可以看到，为了减少随机函数的调用，
+在获取的数量占集合元素的数量比例较大时，
+会用移除代替增加来达到优化的效果。
+特别的，三分之一是因为，随机到的元素不会被移除，
+继续获取下一个时，会重复。</p>
+<h1 id="sintersinterstoresmembers"><code>SINTER</code>/<code>SINTERSTORE</code>/<code>SMEMBERS</code></h1>
+<p>取交集，或者取一个集合的交集（<code>SMEMBERS</code>）。
+最后都是落到<code>sinterGenericCommand</code>实现的。</p>
+<p>有几个比较有意思的优化：</p>
+<ul>
+<li>先根据集合的大小进行排序，先处理数量较小的集合。</li>
+<li>取交集的方法是遍历最小的集合的元素，不断的和后续的集合进行比较，
+所有的集合都有这个元素时，增加到结果中。</li>
+</ul>
+<h1 id="sunionsunionstore"><code>SUNION</code>/<code>SUNIONSTORE</code></h1>
+<p>并集，由<code>sunionDiffGenericCommand</code>实现。</p>
+<p>遍历所有的集合，平平无奇。</p>
+<h1 id="sdiffsdiffstore"><code>SDIFF</code>/<code>SDIFFSTORE</code></h1>
+<p>返回只在第一个集合中出现的元素，由<code>sunionDiffGenericCommand</code>实现。</p>
+<p>diff有两种算法来实现，复杂度分别为：</p>
+<ol>
+<li>第一个集合的长度 * 集合的数量</li>
+<li>所有集合的元素</li>
+</ol>
+<p>所以实现中首先估计了两种算法的成本，然后就是算法的具体实现。</p>
+<p>算法一遍历首个集合的元素，依次与其他集合进行比较，如果都不存在，就加入结果。
+算法二将首个集合的元素都加入到辅助hash表，然后遍历后续的集合，
+将出现过的元素都尝试从辅助hash表中移除。</p>
+<h1 id="sscan"><code>SSCAN</code></h1>
+<p>最终落到<code>scanGenericCommand</code>上来完成。
+可以看下这篇文章<a href="/post/redis/how_redis_work_common/#scan相关的实现">scan相关的实现</a>。</p>
+<h1 id="sort"><code>SORT</code></h1>
+<p>与列表的实现类似。可以参考<a href="/post/redis/how_redis_work_list/#sort">列表的<code>SORT</code>接口实现</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-26
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/how_redis_work_sortedset/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">有序集合的实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/redis_pqsort/">
+            <span class="next-text nav-default">redis中pqsort的简单分析</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-26 01:34:30 \u002b0800 \u002b0800',
+        title: '集合的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

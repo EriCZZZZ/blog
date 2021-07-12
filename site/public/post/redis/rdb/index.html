@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>redis RDB的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="基于redis 6.0版本
+对于redis的两种持久化方法听说很久了， 但一直没有认真的了解过， 所以找机会来学习下。
+rdb是Redis Database Backup的缩写。
+Redis Database Backup File是用来保存快照式的redis的数据的文件。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/rdb/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="redis RDB的实现" />
+<meta property="og:description" content="基于redis 6.0版本
+对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。
+rdb是Redis Database Backup的缩写。
+Redis Database Backup File是用来保存快照式的redis的数据的文件。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/rdb/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-02-07T22:00:12&#43;08:00" />
+<meta property="article:modified_time" content="2021-02-07T22:00:12&#43;08:00" />
+
+<meta itemprop="name" content="redis RDB的实现">
+<meta itemprop="description" content="基于redis 6.0版本
+对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。
+rdb是Redis Database Backup的缩写。
+Redis Database Backup File是用来保存快照式的redis的数据的文件。"><meta itemprop="datePublished" content="2021-02-07T22:00:12&#43;08:00" />
+<meta itemprop="dateModified" content="2021-02-07T22:00:12&#43;08:00" />
+<meta itemprop="wordCount" content="2917">
+<meta itemprop="keywords" content="redis,how," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="redis RDB的实现"/>
+<meta name="twitter:description" content="基于redis 6.0版本
+对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。
+rdb是Redis Database Backup的缩写。
+Redis Database Backup File是用来保存快照式的redis的数据的文件。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">redis RDB的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-02-07 </span>
+        
+          <span class="more-meta"> 约 2917 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#触发保存的时机">触发保存的时机</a></li>
+    <li><a href="#rdb的机制">RDB的机制</a>
+      <ul>
+        <li><a href="#rdbsaverio"><code>rdbSaveRio</code></a></li>
+        <li><a href="#rdbsavekeyvaluepair"><code>rdbSaveKeyValuePair</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#一些分析">一些分析</a>
+      <ul>
+        <li><a href="#后台存储线程和主线程同时访问数据不会产生并发问题吗">后台存储线程和主线程同时访问数据不会产生并发问题吗？</a></li>
+        <li><a href="#如何设计一个存储数据的格式">如何设计一个存储数据的格式</a></li>
+        <li><a href="#rdb文件格式">RDB文件格式</a>
+          <ul>
+            <li><a href="#kv对数据">KV对数据</a></li>
+            <li><a href="#指令">指令</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p><em>基于redis 6.0版本</em></p>
+<p>对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。</p>
+<p>rdb是Redis Database Backup的缩写。</p>
+<p>Redis Database Backup File是用来保存快照式的redis的数据的文件。</p>
+<h1 id="触发保存的时机">触发保存的时机</h1>
+<p>保存RDB由<code>rdbSave</code>实现。
+<code>rdbSave</code>是一个同步阻塞的函数，
+有一个异步版本包装函数<code>rdebSaveBacground</code>，
+包装中尝试初始化一个通信用的<code>pipe</code>后利用<code>fork</code>机制开启一个进程来运行<code>rdbSave</code>。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/rdb.c#L1314
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">rdbSave</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="n">rdbSaveInfo</span> <span class="o">*</span><span class="n">rsi</span><span class="p">)</span>
+<span class="c1">// src/rdb.c#L1382
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">rdbSaveBackground</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="n">rdbSaveInfo</span> <span class="o">*</span><span class="n">rsi</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>通过追踪两个函数的调用，可以发现有多个触发的机制：</p>
+<ol>
+<li>通过Redis的<code>SAVE</code>或<code>BGSAVE</code>指令来触发。</li>
+<li><code>FLUSHALL</code>指令也会执行。</li>
+<li><code>prepareForShutdown</code>中也会调用。</li>
+<li>注册在时间事件中的<code>serverCron</code>也会调用。</li>
+</ol>
+<h1 id="rdb的机制">RDB的机制</h1>
+<p>RDB的核心逻辑在<code>rdbSave</code>函数中实现，
+<code>rdbSave</code>接受两个参数：</p>
+<ol>
+<li>一个字符串<code>filename</code></li>
+<li>一个<code>rdbSaveInfo</code>的指针<code>rsi</code>，用于传递一些附加功能的参数</li>
+</ol>
+<p>首先会尝试创建一个名为<code>temp-{{pid}}.rdb</code>的临时文件。</p>
+<p>然后初始化<code>rio</code>对象(<code>rioInitWithFile</code>)，根据配置调整好<code>rio</code>。</p>
+<blockquote>
+<p><code>rio</code>是一个面向流的简单抽象，提供了读写流的接口抽象。</p>
+</blockquote>
+<p>一切准备就绪后，调用<code>rdbSaveRio</code>执行真正的保存操作。</p>
+<p><code>rdbSaveRio</code>执行成功之后，依次调用<code>fflush</code>/<code>fsync</code>/<code>fclose</code>来保证数据落盘。</p>
+<p>最后调用<code>rename</code>将临时文件移动到<code>filename</code>完成整个流程。</p>
+<h2 id="rdbsaverio"><code>rdbSaveRio</code></h2>
+<p><code>rdbSaveRio</code>有四个入参，分别是<code>rio</code>的实例、异常、flags和<code>rdbSaveInfo</code>实例。</p>
+<p>准备的事情都在<code>rdbSave</code>中完成了，这里就是很纯粹的按照格式写入文件。</p>
+<p>首先写入了生成该rdb文件的版本号和一些辅助字段和信息(<code>rdbSaveAuxField</code>/<code>rdbSaveModulesAux</code>)。</p>
+<p>随后遍历所有的<code>db</code>：</p>
+<ol>
+<li>通过<code>dictGetSafeIterator</code>获得一个<code>dict</code>的迭代器</li>
+<li>写入选择数据库的指令</li>
+<li>写入数据库大小的指令和大小</li>
+<li>遍历所有所有的entry</li>
+<li>调用<code>rdbSaveKeyValuePair</code>保存数据</li>
+</ol>
+<p>最后写入结束的标记。</p>
+<h2 id="rdbsavekeyvaluepair"><code>rdbSaveKeyValuePair</code></h2>
+<p>数据存储的实现。</p>
+<ol>
+<li>如果有过期时间，保存过期时间</li>
+<li>保存LRU信息 <em>(IdleTime)</em></li>
+<li>保存LFU信息</li>
+<li>保存键值对的值</li>
+<li><code>rdbSaveObjectType</code> 保存值的类型
+通过一个switch保存了值的类型。</li>
+<li><code>rdbSaveStringObject</code> 保存键</li>
+<li><code>rdbSaveObject</code> 保存值，实现是一个长长长长长的多个if判断
+<ul>
+<li>字符串就是正常的保存</li>
+<li>列表会遍历<code>QUICK_LIST</code>的节点，对于未压缩的节点就直接保存，否则会当作Blob保存</li>
+<li>对于SET，哈希表实现会通过迭代器遍历并保存，整数集合会当作Blob保存</li>
+<li>对于有序集合，也是类似的处理方式</li>
+<li>对于哈希表，也是该遍历遍历，该存成Blob就存成Blob</li>
+</ul>
+</li>
+</ol>
+<h1 id="一些分析">一些分析</h1>
+<h2 id="后台存储线程和主线程同时访问数据不会产生并发问题吗">后台存储线程和主线程同时访问数据不会产生并发问题吗？</h2>
+<p>这个非常的巧妙，通过<code>fork</code>出新的线程，linux会利用COW来避免无用的内存复制，
+这相当于子线程创建了一个执行<code>fork</code>时的一个快照。</p>
+<p>这样通过利用系统的机制来解决了并发与复制的问题，十分巧妙。</p>
+<h2 id="如何设计一个存储数据的格式">如何设计一个存储数据的格式</h2>
+<p>或者说，设计一个序列化数据的格式。
+不光是简单的存储，比如经常使用的thrift和protobuf也是类似的。</p>
+<p>首先是扩展性。在业务和功能不断扩展的情况下，很难说能够一次性设计好需要的格式。
+扩展性包括向前兼容和向后兼容，分别指旧的程序支持后续生成的数据（向前兼容 Forwards Compatibility）
+和新的程序支持旧的数据（向后兼容 Backwards Compatibility），
+换句话说是（程序）向前/后兼容（数据）。</p>
+<p>向后兼容是通常要做也可以做到的，而向前兼容则比较难。
+如果要作向前兼容比较困难一点，特别是在一个不断发展的格式上。</p>
+<p>退而求其次，在程序面对新的未知的格式时能优雅的做出响应是一个可以接受的处理方式。</p>
+<p>然后是编解码的速度和数据大小。
+不约而同的，很多编码格式都会把数据的长度放在存储开始的地方。
+这样就能够顺序遍历一遍后便 <strong>不多不少的</strong> 读取到全部的数据。
+而速度与产生的数据大小是跷跷板的两端，
+相对的，如果不执行压缩，生成与读取的速度会便会但数据量会变大，反之亦然。</p>
+<h2 id="rdb文件格式">RDB文件格式</h2>
+<p>可以通过分析读取RDB的函数来分析RDB文件的格式。</p>
+<p>加载RDB文件由<code>rdbLoadRio</code>完成。</p>
+<p>首先会读取9个字节，检查是否是<code>REDIS{{version}}</code>并判断version是否是本实例支持的版本。</p>
+<p>随后就进入一个大循环，在这个大循环中完成了每一条记录的读取。</p>
+<p>对于每一条记录，首先调用<code>rdbLoadType</code>来读取一个字节，
+解释为无符号整数，业务含义是“类型”，标记接下来的数据的格式。</p>
+<p>类型分为两大类分别是<code>RDB_OPCODE_*</code>存储非kv对的信息，和<code>RDB_TYPE_*</code>，存储kv对的数据。</p>
+<p>一个巨大的if首先来判断是否是<code>OPCODE</code>型的记录，如果不是那么就认为是kv对数据。</p>
+<h3 id="kv对数据">KV对数据</h3>
+<p>通过<code>rdbGenericLoadStringObject</code>读取字符串作为key，
+通过<code>rdbLoadObject</code>读取对应的对象。</p>
+<ol>
+<li>
+<p>读取key</p>
+<p><code>rdbGenericLoadStringObject</code>会解析rdb中的数据，并按照入参解析成普通字符串、压缩字符串或数字。</p>
+<p>字符串存储先是一个变长的字节序列标记字符串的长度，<code>rdbLoadLenByRef</code>负责处理长度的读取。
+首先读取高2bit来判断表示长度的字节序列有多长，随后便按照对应格式来读取成长度。
+除此之外，<code>rdbLoadLenByRef</code>还会解析出字符串是否是经过编码。</p>
+<p>所谓的“编码”有数字和经过压缩的字符串两种情况，
+分别由<code>rdbLoadIntegerObject</code>和<code>rdbLoadLzfStringObject</code>来接管。</p>
+<p>数字的处理比较简单，就是读取、转换。</p>
+<p><code>LzfString</code>的存储分为三部分，压缩长度、解压后长度和数据。
+首先读取两个长度，然后根据压缩长度读取数据，调用<code>lzf_decompress</code>来解压，最后根据flags来返回需要的对象。</p>
+<p>对于无编码的情况，根据入参来读取数据直接返回或构建一个sds对象或string对象。</p>
+</li>
+<li>
+<p>读取Object</p>
+<p>一个大if来根据type处理对应的数据类型。</p>
+<ul>
+<li>
+<p>RDB_TYPE_STRING</p>
+<p>字符串类型的对象解析与key的解析用的是同一个函数，这里就不再重复分析了。</p>
+</li>
+<li>
+<p>RDB_TYPE_LIST</p>
+<p>要加载的格式是<code>quick_list</code>。
+首先是用过很多遍的<code>rdbLoadLen</code>读取到列表的长度。
+随后根据读取到的长度来继续加载数据，并解析，最后追加到列表中。</p>
+</li>
+<li>
+<p>SET</p>
+<p>和列表十分的类似，会读取长度，加载数据，追加到数据结构中。
+特别的，会根据长度来选择是用数字集合还是哈希表来承载。</p>
+</li>
+<li>
+<p>ZSET</p>
+<p>特别的，除了读取值之外，还会调用<code>rdbLoadBinaryDoubleValue</code>或<code>rdbLoadDoubleValue</code>来读取分数。</p>
+</li>
+<li>
+<p>HASH</p>
+<p>没有什么特别的，与其他的实现思路类似。</p>
+</li>
+<li>
+<p>LIST_QUICKLIST</p>
+<p>与LIST类似，不同在于使用了压缩列表</p>
+</li>
+<li>
+<p>RDB_TYPE_HASH_ZIPMAP | RDB_TYPE_LIST_ZIPLIST | RDB_TYPE_SET_INTSET | RDB_TYPE_ZSET_ZIPLIST | RDB_TYPE_HASH_ZIPLIST</p>
+<p>这几个类型与前述的区别在于，读取到的是压缩过的字符串，随后会被解析到对应的类型。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="指令">指令</h3>
+<p>这里只记录几个的含义。</p>
+<ul>
+<li>
+<p><code>RDB_OPCODE_EXPIRETIME</code> <code>RDB_OPCODE_EXPIRETIME_MS</code></p>
+<p>通过<code>rdbLoadTime</code>或<code>rdbLoadMillisecondTime</code>读取4字节解释为整数。</p>
+</li>
+<li>
+<p><code>RDB_OPCODE_FREQ</code> <code>RDB_OPCODE_IDLE</code></p>
+<p>用于LRU和LFU的数据。</p>
+</li>
+<li>
+<p><code>RDB_OPCODE_EOF</code></p>
+<p>结束的标志。</p>
+</li>
+</ul>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-02-07
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/how/">how</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/aof/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis AOF的实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/in_action/apollo_agent_refresh/">
+            <span class="next-text nav-default">[有趣事情的发生]携程apollo配置更新推送的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-02-07 22:00:12 \u002b0800 \u002b0800',
+        title: 'redis RDB的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

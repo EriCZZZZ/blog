@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>hugo on blog</title>
+    <link>https://blog.er1c.dev/tags/hugo/</link>
+    <description>Recent content in hugo on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 30 Mar 2021 19:47:06 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/hugo/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>hugo的日常使用</title>
+      <link>https://blog.er1c.dev/post/memo/hugo/</link>
+      <pubDate>Tue, 30 Mar 2021 19:47:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/hugo/</guid>
+      <description>因为下划线导致latex公式渲染不正确/渲染成斜体 有些hugo的主题会带有latex的渲染插件， 这些插件通常用$作为行内公式的标记符。 公式中</description>
+    </item>
+    
+  </channel>
+</rss>

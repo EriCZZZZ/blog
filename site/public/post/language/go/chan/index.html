@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>go channel原理分析 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="从功能出发，分析channel的原理。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/language/go/chan/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="go channel原理分析" />
+<meta property="og:description" content="从功能出发，分析channel的原理。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/language/go/chan/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-05-11T16:30:05&#43;08:00" />
+<meta property="article:modified_time" content="2021-05-11T16:30:05&#43;08:00" />
+
+<meta itemprop="name" content="go channel原理分析">
+<meta itemprop="description" content="从功能出发，分析channel的原理。"><meta itemprop="datePublished" content="2021-05-11T16:30:05&#43;08:00" />
+<meta itemprop="dateModified" content="2021-05-11T16:30:05&#43;08:00" />
+<meta itemprop="wordCount" content="3410">
+<meta itemprop="keywords" content="go-src,go,what," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="go channel原理分析"/>
+<meta name="twitter:description" content="从功能出发，分析channel的原理。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">go channel原理分析</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-05-11 </span>
+        
+          <span class="more-meta"> 约 3410 字 </span>
+          <span class="more-meta"> 预计阅读 7 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#tldr">TLDR</a>
+      <ul>
+        <li><a href="#原理">原理</a></li>
+        <li><a href="#使用上的点">使用上的点</a>
+          <ul>
+            <li><a href="#读取写入是有序的">读取写入是有序的</a></li>
+            <li><a href="#关闭nil的channel或重复关闭channel会导致panic">关闭nil的channel或重复关闭channel会导致panic</a></li>
+            <li><a href="#只由写入方关闭channel">只由写入方关闭channel</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#功能">功能</a>
+      <ul>
+        <li><a href="#新建">新建</a></li>
+        <li><a href="#写入与读取">写入与读取</a>
+          <ul>
+            <li><a href="#写入-chansend">写入 <code>chansend</code></a></li>
+            <li><a href="#读取-chanrecv">读取 <code>chanrecv</code></a></li>
+          </ul>
+        </li>
+        <li><a href="#关闭channel">关闭channel</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>从功能出发，分析channel的原理。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/language/go/memory_model/">go内存模型与sync包</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/language/go/chan/">go channel原理分析</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p><em>go1.16</em></p>
+<p><em>src/runtime/chan.go</em></p>
+<h1 id="tldr">TLDR</h1>
+<h2 id="原理">原理</h2>
+<p>channel内部有写入､读取两个等待队列，
+当数据溢出或饥饿时，
+会阻塞并追加到写入､读取队列上。</p>
+<p>如果配置了buf，那么有一个环形数组来实现缓冲区。</p>
+<h2 id="使用上的点">使用上的点</h2>
+<h3 id="读取写入是有序的">读取写入是有序的</h3>
+<h3 id="关闭nil的channel或重复关闭channel会导致panic">关闭nil的channel或重复关闭channel会导致panic</h3>
+<h3 id="只由写入方关闭channel">只由写入方关闭channel</h3>
+<p>向一个已关闭的channel写入数据，
+或（因channel缓冲已满）等待写入时channel被关闭都会产生panic。</p>
+<p>所以关闭channel应该保证没有写入方会写入时再关闭，
+简单地，可以用“只由写入方”关闭来理解。</p>
+<h1 id="数据结构">数据结构</h1>
+<p>从功能来看，
+channel可以简单看作一个传递数据的管道，
+可以暂存预定义上限数量的数据，
+并发安全，允许并行的读写。</p>
+<p>如果暂无数据或缓存溢出，
+还会将读取或写入操作阻塞，
+直到可读可写。</p>
+<p>channel支持关闭，
+对一个关闭了的channel进行操作有固定的结果。</p>
+<p>可以猜想一个channel对象中：</p>
+<ul>
+<li>有一个区域来缓存数据</li>
+<li>有goroutine的等待队列来维持阻塞</li>
+<li>有锁或其他机制来处理并发问题</li>
+<li>有状态变量来维护是否关闭</li>
+</ul>
+<p>首先来看下channel的结构：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">hchan</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="nx">qcount</span>   <span class="kt">uint</span>           <span class="c1">// 缓冲区中目前的数量
+</span><span class="c1"></span>    <span class="nx">dataqsiz</span> <span class="kt">uint</span>           <span class="c1">// chan的缓冲区的元素数量上限
+</span><span class="c1"></span>    <span class="nx">buf</span>      <span class="nx">unsafe</span><span class="p">.</span><span class="nx">Pointer</span> <span class="c1">// 一个环形缓冲区
+</span><span class="c1"></span>    <span class="nx">elemsize</span> <span class="kt">uint16</span>
+    <span class="nx">closed</span>   <span class="kt">uint32</span>
+    <span class="nx">elemtype</span> <span class="o">*</span><span class="nx">_type</span> <span class="c1">// element type
+</span><span class="c1"></span>    <span class="nx">sendx</span>    <span class="kt">uint</span>   <span class="c1">// send index 下一个要插入的下标
+</span><span class="c1"></span>    <span class="nx">recvx</span>    <span class="kt">uint</span>   <span class="c1">// receive index
+</span><span class="c1"></span>    <span class="nx">recvq</span>    <span class="nx">waitq</span>  <span class="c1">// list of recv waiters
+</span><span class="c1"></span>    <span class="nx">sendq</span>    <span class="nx">waitq</span>  <span class="c1">// list of send waiters
+</span><span class="c1"></span>
+    <span class="c1">// lock protects all fields in hchan, as well as several
+</span><span class="c1"></span>    <span class="c1">// fields in sudogs blocked on this channel.
+</span><span class="c1"></span>    <span class="c1">//
+</span><span class="c1"></span>    <span class="c1">// Do not change another G&#39;s status while holding this lock
+</span><span class="c1"></span>    <span class="c1">// (in particular, do not ready a G), as this can deadlock
+</span><span class="c1"></span>    <span class="c1">// with stack shrinking.
+</span><span class="c1"></span>    <span class="nx">lock</span> <span class="nx">mutex</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>字段不多，用途也比较明确：</p>
+<ul>
+<li><code>sendx</code> <code>recvx</code> <code>elemtype</code> <code>qcount</code> <code>dataqsiz</code> <code>buf</code> <code>elemsize</code> 支持暂存功能</li>
+<li><code>closed</code> 存储是否关闭</li>
+<li>有两个等待队列 <code>recvq</code> <code>sendq</code></li>
+<li>有一个锁 <code>lock</code> 用来保护chan的全部字段，根据注释，还保护了阻塞在该chan上的<code>g</code>中的某些字段</li>
+</ul>
+<h1 id="功能">功能</h1>
+<p>channel相关的功能有：</p>
+<ul>
+<li>新建</li>
+<li>从chan读取</li>
+<li>写入chan</li>
+<li>通过<code>select</code>写入或读取</li>
+<li>关闭</li>
+</ul>
+<p>本文接下来会依次分析相关功能的实现原理。</p>
+<h2 id="新建">新建</h2>
+<p>代码中的<code>ch := make(chan interface{})</code>最终由函数
+<code>func makechan(t *chantype, size int) *hchan</code>
+执行。</p>
+<p><code>makechan</code>需要做：</p>
+<ol>
+<li>初始化<code>hchan</code>和内部的暂存内存</li>
+<li>初始化锁与<code>elemsize</code>等信息</li>
+</ol>
+<p><code>makechan</code>根据chan传输的数据类型是否包含指针来选择具体的分配内存的方式。</p>
+<p>如果是不包含指针的情况，
+会直接调用<code>mallocgc</code>在noscan的span上分配<code>hchan</code>和暂存区的内存。
+反之，会先调用<code>new</code>来初始化<code>hchan</code>，
+随后调用<code>mallocgc</code>正常初始化暂存区。</p>
+<p>内存分配完成之后，
+配置好传输的数据类型的大小､类型，通过<code>lockInit</code>初始化好锁。</p>
+<p>新建一个chan到此就完成了。</p>
+<h2 id="写入与读取">写入与读取</h2>
+<p>读写chan有两种情况：</p>
+<ol>
+<li>直接读写</li>
+<li>通过select来监听多个“IO事件”</li>
+</ol>
+<p>这里先分析第一种情况，
+对于通过<code>select</code>来操作chan的情况后面会具体分析。</p>
+<p>从写入的视角来看，
+主要有三种情况：</p>
+<ol>
+<li>chan上阻塞了等待数据的读取goroutine</li>
+<li>chan上没有等待数据的goroutine，那么就尝试写入缓冲区</li>
+<li>缓冲区满，（如果需要）那么就将该goroutine阻塞</li>
+</ol>
+<p>反之，读取也是类似的。</p>
+<h3 id="写入-chansend">写入 <code>chansend</code></h3>
+<p>写入操作的核心流程由<code>func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool</code>
+实现，接受四个参数：</p>
+<ol>
+<li>c 要写入的chan</li>
+<li>ep</li>
+<li>block 在无法写入的时候是否阻塞</li>
+<li>callerpc</li>
+</ol>
+<p>返回是否写入成功。</p>
+<ol>
+<li>
+<p>不加锁的检查</p>
+<p>首先检查目标chan是否为nil，
+如果是nil，
+会根据<code>block</code>直接返回<code>false</code>或调用<code>gopark</code>挂起，
+这种情况的挂起会导致该goroutine永久的挂起。</p>
+<p>然后在<strong>不加锁的情况下</strong>检查chan是否<strong>立即可写</strong>，
+如果参数<code>block</code>为false且不是立即可写的，
+直接返回false。</p>
+<p><strong>立即可写</strong>需要满足channel未关闭且channel的缓冲区未满。</p>
+</li>
+<li>
+<p>获取锁</p>
+<p>获取chan的锁，然后检查chan是否已经关闭，
+如果已经关闭抛出panic。</p>
+</li>
+<li>
+<p>写入-有等待的读goroutine</p>
+<p>通过<code>c.recvq.dequeue()</code>尝试获取一个等待读取的goroutine，
+如果成功，调用<code>send</code>发送数据，完成写入，返回<code>true</code>。
+<code>send</code>的具体实现暂且放过，等后续流程分析完成后，
+在结合发送部分一同分析。</p>
+</li>
+<li>
+<p>写入-缓冲区</p>
+<p>检查<code>c.qcount &lt; c.dataqsiz</code>来判断缓冲区是否已满，写入。</p>
+<p><code>c.qcount</code>是目前缓冲区中有的未读取的元素数量；
+<code>c.dataqsiz</code>是上限。</p>
+<p>具体的分析在下面的注释中了。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">qcount</span> <span class="p">&lt;</span> <span class="nx">c</span><span class="p">.</span><span class="nx">dataqsiz</span> <span class="p">{</span> <span class="c1">// 如果没有满
+</span><span class="c1"></span>    <span class="c1">// Space is available in the channel buffer. Enqueue the element to send.
+</span><span class="c1"></span>    <span class="nx">qp</span> <span class="o">:=</span> <span class="nf">chanbuf</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">sendx</span><span class="p">)</span> <span class="c1">// 计算出要插入的地址
+</span><span class="c1"></span>    <span class="k">if</span> <span class="nx">raceenabled</span> <span class="p">{</span>
+        <span class="nf">racenotify</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">sendx</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="c1">// 拷贝要插入的数据到刚刚计算出的地址
+</span><span class="c1"></span>    <span class="nf">typedmemmove</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">elemtype</span><span class="p">,</span> <span class="nx">qp</span><span class="p">,</span> <span class="nx">ep</span><span class="p">)</span>
+    <span class="c1">// 更新环形缓冲区的指针
+</span><span class="c1"></span>    <span class="nx">c</span><span class="p">.</span><span class="nx">sendx</span><span class="o">++</span>
+    <span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">sendx</span> <span class="o">==</span> <span class="nx">c</span><span class="p">.</span><span class="nx">dataqsiz</span> <span class="p">{</span>
+        <span class="nx">c</span><span class="p">.</span><span class="nx">sendx</span> <span class="p">=</span> <span class="mi">0</span>
+    <span class="p">}</span>
+    <span class="c1">// 更新chan缓冲的元素数量
+</span><span class="c1"></span>    <span class="nx">c</span><span class="p">.</span><span class="nx">qcount</span><span class="o">++</span>
+    <span class="c1">// 解锁
+</span><span class="c1"></span>    <span class="nf">unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">lock</span><span class="p">)</span>
+    <span class="c1">// 完成写入
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>写入-等待写入队列</p>
+<p>到这个时候，已经无法立即写入了，
+如果<code>block</code>是<code>false</code>，那么便立即返回；
+反之，将该goroutine加入到chan的等待队列上。</p>
+<p>首先获取一个当前goroutine的<code>sudog</code>对象，
+填充相关信息，追加到<code>c.sendq</code>上。</p>
+<p><code>gopark(chanparkcommit, ...)</code>挂起。</p>
+<p>这个时候该goroutine就开始等待直到读取的goroutine唤醒。</p>
+<p>特别的，利用<code>KeepAlive</code>来保证在消费者“拥有”要传输的对象之前不会被清理。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nf">gopark</span><span class="p">(</span><span class="nx">chanparkcommit</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">lock</span><span class="p">),</span> <span class="nx">waitReasonChanSend</span><span class="p">,</span> <span class="nx">traceEvGoBlockSend</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="c1">// Ensure the value being sent is kept alive until the
+</span><span class="c1">// receiver copies it out. The sudog has a pointer to the
+</span><span class="c1">// stack object, but sudogs aren&#39;t considered as roots of the
+</span><span class="c1">// stack tracer.
+</span><span class="c1"></span><span class="nf">KeepAlive</span><span class="p">(</span><span class="nx">ep</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>写入-阻塞后被唤醒</p>
+<p>清理goroutine等待的标记。</p>
+<p>释放<code>sudog</code>。</p>
+<p>检查是否传输成功，根据channel的状态产生异常：</p>
+<ul>
+<li>如果channel被关闭，那么抛出panic</li>
+<li>反之，产生非预期唤醒的fatal：<code>chansend: spurious wakeup</code></li>
+</ul>
+</li>
+<li>
+<p>完成</p>
+<p>返回<code>true</code>。</p>
+</li>
+</ol>
+<h3 id="读取-chanrecv">读取 <code>chanrecv</code></h3>
+<p>读取由<code>func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)</code>完成。</p>
+<p>接受三个参数：</p>
+<ul>
+<li>c 要读取的chan</li>
+<li>ep 读取到的元素存储的地址</li>
+<li>block 如果不能立即读取，是否阻塞</li>
+</ul>
+<p>返回两个值：</p>
+<ul>
+<li>selected 如果读取有结果（channel关闭了或读取到数据），返回<code>true</code></li>
+<li>received 如果读取到了数据，返回<code>true</code></li>
+</ul>
+<p>类似于写入，读取也有三种情况：</p>
+<ul>
+<li>有等待的写入goroutine</li>
+<li>缓冲区有待读取的数据</li>
+<li>没有数据可以读取，（如果需要）阻塞在chan上等待</li>
+</ul>
+<ol>
+<li>
+<p>加锁前的检查</p>
+<p>如果chan为nil，非阻塞情况返回；允许阻塞的goroutine则会永久的挂起在该goroutine上。</p>
+<p>如果不能立即读取到数据且不允许阻塞的情况下，直接返回结果。</p>
+</li>
+<li>
+<p>加锁及检查channel是否关闭</p>
+<p>获取chan的锁，
+随后检查chan状态，
+如果chan已经关闭<strong>且没有未读取的数据</strong>，
+返回“<strong>无数据可读取､chan已经关闭的情况</strong>” <em>(<code>selected = true, received = false</code>)</em>。</p>
+</li>
+<li>
+<p>读取-写入等待队列</p>
+<p>尝试从<code>c.sendq</code>获取一个等待写入的goroutine，
+如果存在，那么调用<code>recv</code>获取数据，返回“<strong>读取到数据</strong>”。</p>
+<p><code>func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int)</code></p>
+<p>函数接受目标chan<code>c</code>，pop出来的等待写入的sudog<code>sg</code>，
+目标地址，解锁函数，<code>goready</code>需要的参数<code>skip</code>。</p>
+<p><code>recv</code>针对有无缓冲区进行不同的操作。</p>
+<p>如果没有缓冲区，调用<code>recvDirect</code>直接从弹出的sudog的中读取数据；
+反之，从缓冲区中读取第一个数据，将<code>sg</code>的数据写入到缓冲区。</p>
+<p>解锁，唤醒<code>sg</code>对应的goroutine，返回。</p>
+<p>前述提到的<code>send</code>实现与<code>recv</code>类似，
+但是只有直接写入到等待读取的goroutine的部分，
+由<code>sendDirect</code>完成。最后解锁，唤醒等待读取的goroutine，返回。</p>
+</li>
+<li>
+<p>读取-缓冲区</p>
+<p>如果缓冲区中有数据，就从其中读取一个。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">qcount</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+    <span class="c1">// Receive directly from queue
+</span><span class="c1"></span>    <span class="nx">qp</span> <span class="o">:=</span> <span class="nf">chanbuf</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">recvx</span><span class="p">)</span> <span class="c1">// 获取一个缓冲区中的数据
+</span><span class="c1"></span>    <span class="k">if</span> <span class="nx">raceenabled</span> <span class="p">{</span>
+        <span class="nf">racenotify</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">recvx</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="nx">ep</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nf">typedmemmove</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">elemtype</span><span class="p">,</span> <span class="nx">ep</span><span class="p">,</span> <span class="nx">qp</span><span class="p">)</span> <span class="c1">// 如果不为空，复制数据
+</span><span class="c1"></span>    <span class="p">}</span>
+    <span class="nf">typedmemclr</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">elemtype</span><span class="p">,</span> <span class="nx">qp</span><span class="p">)</span> <span class="c1">// 声明变量的类型
+</span><span class="c1"></span>    <span class="c1">// 更新缓冲区标记数据
+</span><span class="c1"></span>    <span class="nx">c</span><span class="p">.</span><span class="nx">recvx</span><span class="o">++</span>
+    <span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">recvx</span> <span class="o">==</span> <span class="nx">c</span><span class="p">.</span><span class="nx">dataqsiz</span> <span class="p">{</span>
+        <span class="nx">c</span><span class="p">.</span><span class="nx">recvx</span> <span class="p">=</span> <span class="mi">0</span>
+    <span class="p">}</span>
+    <span class="nx">c</span><span class="p">.</span><span class="nx">qcount</span><span class="o">--</span>
+    <span class="nf">unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">lock</span><span class="p">)</span>
+    <span class="c1">// 返回成功
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kc">true</span><span class="p">,</span> <span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>读取-阻塞</p>
+<p>类似写入，获取､构建一个<code>sudog</code>，
+追加到<code>c.recvq</code>中。
+调用<code>gopark</code>阻塞。</p>
+<p>等待直到一个写入的goroutine传输好数据，
+唤醒。</p>
+<p>清理､释放<code>sudog</code>，
+检查是否传输成功(<code>mysg.success // mysg是sudog</code>)，
+返回结果。</p>
+</li>
+</ol>
+<h2 id="关闭channel">关闭channel</h2>
+<p>关闭channel由<code>func closechan(c *hchan)</code>完成。</p>
+<p>首先检查目标chan是否为nil或已经关闭，
+如果是抛出panic，
+其中，检查是否已经关闭之前加锁。</p>
+<p>依次遍历<code>sendq</code>和<code>recvq</code>，
+唤醒所有的goroutine，
+对于等待读取的goroutine返回“已关闭”，
+对于等待写入的程序，直接返回（会触发panic）。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-05-11
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/go-src/">go-src</a>
+          <a href="/tags/go/">go</a>
+          <a href="/tags/what/">what</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/compile/compilers/1/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">编译原理 第一章 笔记</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/language/go/memory_model/">
+            <span class="next-text nav-default">go内存模型与sync包</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-05-11 16:30:05 \u002b0800 \u002b0800',
+        title: 'go channel原理分析',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

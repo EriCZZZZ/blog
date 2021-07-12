@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>redis指令的实现-字符串 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="redis字符串相关指令的具体实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_string/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="redis指令的实现-字符串" />
+<meta property="og:description" content="redis字符串相关指令的具体实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_string/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-11T16:59:20&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-11T16:59:20&#43;08:00" />
+
+<meta itemprop="name" content="redis指令的实现-字符串">
+<meta itemprop="description" content="redis字符串相关指令的具体实现。"><meta itemprop="datePublished" content="2020-11-11T16:59:20&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-11T16:59:20&#43;08:00" />
+<meta itemprop="wordCount" content="1338">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="redis指令的实现-字符串"/>
+<meta name="twitter:description" content="redis字符串相关指令的具体实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">redis指令的实现-字符串</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-11 </span>
+        
+          <span class="more-meta"> 约 1338 字 </span>
+          <span class="more-meta"> 预计阅读 3 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#getmget"><code>GET</code>/<code>MGET</code></a></li>
+    <li><a href="#set-key-value-ex-secondspx-millisecondskeepttl-nxxx-get"><code>SET key value [EX seconds|PX milliseconds|KEEPTTL] [NX|XX] [GET]</code></a></li>
+    <li><a href="#setnxsetexpsetex"><code>SETNX</code>/<code>SETEX</code>/<code>PSETEX</code></a></li>
+    <li><a href="#msetmsetnx"><code>MSET</code>/<code>MSETNX</code></a></li>
+    <li><a href="#getset"><code>GETSET</code></a></li>
+    <li><a href="#append"><code>APPEND</code></a></li>
+    <li><a href="#strlen"><code>STRLEN</code></a></li>
+    <li><a href="#setrangegetrangesubstr"><code>SETRANGE</code>/<code>GETRANGE</code>/<code>SUBSTR</code></a></li>
+    <li><a href="#incrdecrincrbydecrby"><code>INCR</code>/<code>DECR</code>/<code>INCRBY</code>/<code>DECRBY</code></a></li>
+    <li><a href="#incrbyfloat"><code>INCRBYFLOAT</code></a></li>
+    <li><a href="#stralgo-string_algorithms"><code>STRALGO</code> string_algorithms</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>redis字符串相关指令的具体实现。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p>分类按照命令表的flag来确定，字符串类的是包含<code>@string</code>标签的指令。</p>
+<p><em>基于redis 6.0</em></p>
+<p><em>这个希望能坚持下来，做成一个系列，来简单介绍各个类型的指令的具体实现。</em></p>
+<h1 id="getmget"><code>GET</code>/<code>MGET</code></h1>
+<p><em>src/t_string.c#179</em></p>
+<p>对于<code>GET</code>，
+核心实现为<code>getGenericCommand</code>方法。
+首先调用了<code>lookupKeyReadOrReply</code>，获取需要的对象。
+然后判断类型，如果不是<code>OBJ_STRING</code>，那么就返回错误(<code>addReply</code>)。
+最后调用<code>addReplyBulk</code>返回结果。</p>
+<p><code>MGET</code>的实现类似，通过循环依次使用<code>lookupKeyRead</code>来查找、检查、返回结果。</p>
+<h1 id="set-key-value-ex-secondspx-millisecondskeepttl-nxxx-get"><code>SET key value [EX seconds|PX milliseconds|KEEPTTL] [NX|XX] [GET]</code></h1>
+<p><em>src/t_string.c#97</em></p>
+<p>首先使用若干if判断来解析<code>NX</code>和<code>EX</code>等参数，
+随后调用<code>setGenericCommand</code>执行具体的操作：</p>
+<ol>
+<li>如果需要的话，解析过期时间(<code>getLongLongFromObjectOrReply</code>)。</li>
+<li>通过<code>lookupKeyWrite</code>来查询对应的key是否存在来检查是否符合<code>NX</code>或<code>XX</code>。</li>
+<li>调用<code>genericSetKey</code>来设置键值对。</li>
+<li>如果需要，调用<code>setExpire</code>设置过期时间。</li>
+<li>调用<code>notifyKeyspaceEvent</code>来通知事件。</li>
+<li>调用<code>addReply</code>返回结果。</li>
+</ol>
+<h1 id="setnxsetexpsetex"><code>SETNX</code>/<code>SETEX</code>/<code>PSETEX</code></h1>
+<p>这些功能的具体实现都是调用<code>setGenericCommand</code>来实现的，
+不同功能由传递的参数来实现。</p>
+<h1 id="msetmsetnx"><code>MSET</code>/<code>MSETNX</code></h1>
+<p>两者使用<code>msetGenericCommand</code>作为实现。
+依次遍历输入的参数，（检查NX），使用<code>setKey</code>来设置值，并触发事件。</p>
+<h1 id="getset"><code>GETSET</code></h1>
+<p>首先使用<code>getGenericCommand</code>获取并设置返回结果。
+随后使用<code>setKey</code>来设置值（最后落到<code>genericSetKey</code>），最后触发相应的事件。</p>
+<h1 id="append"><code>APPEND</code></h1>
+<p><em>src/t_string.c</em></p>
+<ol>
+<li>首先查找是否存在目标key，如果不存在，直接调用<code>dbAdd</code>增加。</li>
+<li>检查查找到的内容，是否是合规，如果没有问题，那么调用<code>sdscatlen</code>来实现append。</li>
+<li>返回append后的长度。</li>
+</ol>
+<h1 id="strlen"><code>STRLEN</code></h1>
+<p>返回调用<code>stringObjectLen</code>来计算长度，数字返回十进制的长度。</p>
+<h1 id="setrangegetrangesubstr"><code>SETRANGE</code>/<code>GETRANGE</code>/<code>SUBSTR</code></h1>
+<p>对于<code>SETRANGE</code>来说，如果key不存在，或者offset超过原有的长度，会将前面的部分填0。</p>
+<p><code>GETRANGE</code>和<code>SUBSTR</code>完全相同，两者使用<code>getrangeCommand</code>作为处理函数，
+对于超过范围的范围，会规范到有意义的长度，见下面的代码。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// t_string.c#279
+</span><span class="c1"></span><span class="k">if</span> <span class="p">(</span><span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">end</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">((</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span><span class="p">)</span><span class="n">end</span> <span class="o">&gt;=</span> <span class="n">strlen</span><span class="p">)</span> <span class="n">end</span> <span class="o">=</span> <span class="n">strlen</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="incrdecrincrbydecrby"><code>INCR</code>/<code>DECR</code>/<code>INCRBY</code>/<code>DECRBY</code></h1>
+<p>这些指令最终都由<code>incrDecrCommand</code>来实现，
+其内部实现清晰：</p>
+<ol>
+<li>获取之前的值，如果没有则新建，检查参数与计算后的参数</li>
+<li>写入结果</li>
+<li>触发相应的事件</li>
+</ol>
+<p>比较有意思的是在变更原有的值时，会检查有无其他地方引用，
+如果有则会重新建立一个对象来存储相应的值。</p>
+<h1 id="incrbyfloat"><code>INCRBYFLOAT</code></h1>
+<p><code>incrbyfloatCommand</code>具体实现类似<code>incrDecrCommand</code>。
+比较有意思的一点是浮点数的精度问题，在主节点中利用语言的<code>long double</code>完成计算后，
+将指令替换成<code>SET</code>，值设为计算的结果，以此来避免AOF重放或副本与正式格式的不一致。</p>
+<h1 id="stralgo-string_algorithms"><code>STRALGO</code> string_algorithms</h1>
+<p>命令用于应用算法到字符串上，第一个参数用来表示使用什么算法。</p>
+<p>目前（6.0）只支持最长公共子串算法。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-11
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/how_redis_work_common/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis指令的实现-基础接口</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/data_struct/">
+            <span class="next-text nav-default">redis的存储模型</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-11 16:59:20 \u002b0800 \u002b0800',
+        title: 'redis指令的实现-字符串',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

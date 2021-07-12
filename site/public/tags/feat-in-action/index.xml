@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>feat-in-action on blog</title>
+    <link>https://blog.er1c.dev/tags/feat-in-action/</link>
+    <description>Recent content in feat-in-action on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 21 Jan 2021 20:04:39 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/feat-in-action/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>[有趣事情的发生]携程apollo配置更新推送的实现</title>
+      <link>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</link>
+      <pubDate>Thu, 21 Jan 2021 20:04:39 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</guid>
+      <description>&lt;p&gt;最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。&lt;/p&gt;
+&lt;p&gt;看过redis的实现之后感觉阅读源码变得容易了一些。&lt;/p&gt;
+&lt;p&gt;看了一些项目之后发现有些遗忘了，&lt;del&gt;在兄弟的鼓励下意识到&lt;/del&gt; 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。&lt;/p&gt;
+&lt;p&gt;这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;希望能够坚持下去。&lt;/em&gt;&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>MySQL相关备忘录 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6 启动mysql失败的时候如何排查？ 如何在Ubuntu 20上使用apt安装低版本m" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/memo/mysql/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="MySQL相关备忘录" />
+<meta property="og:description" content="如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6 启动mysql失败的时候如何排查？ 如何在Ubuntu 20上使用apt安装低版本m" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/memo/mysql/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-10-28T19:02:37&#43;08:00" />
+<meta property="article:modified_time" content="2020-10-28T19:02:37&#43;08:00" />
+
+<meta itemprop="name" content="MySQL相关备忘录">
+<meta itemprop="description" content="如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6 启动mysql失败的时候如何排查？ 如何在Ubuntu 20上使用apt安装低版本m"><meta itemprop="datePublished" content="2020-10-28T19:02:37&#43;08:00" />
+<meta itemprop="dateModified" content="2020-10-28T19:02:37&#43;08:00" />
+<meta itemprop="wordCount" content="866">
+<meta itemprop="keywords" content="MySQL,memo,how-to," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MySQL相关备忘录"/>
+<meta name="twitter:description" content="如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6 启动mysql失败的时候如何排查？ 如何在Ubuntu 20上使用apt安装低版本m"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">MySQL相关备忘录</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-10-28 </span>
+        
+          <span class="more-meta"> 约 866 字 </span>
+          <span class="more-meta"> 预计阅读 2 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#如何在ubuntu-20上使用apt安装低版本mysql-mysql57-mysql56">如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6</a></li>
+    <li><a href="#启动mysql失败的时候如何排查">启动mysql失败的时候如何排查？</a>
+      <ul>
+        <li><a href="#遇到过的错误">遇到过的错误</a></li>
+      </ul>
+    </li>
+    <li><a href="#explain-备忘">EXPLAIN 备忘</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <ul>
+<li>如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6</li>
+<li>启动mysql失败的时候如何排查？</li>
+</ul>
+<h1 id="如何在ubuntu-20上使用apt安装低版本mysql-mysql57-mysql56">如何在Ubuntu 20上使用apt安装低版本mysql？ mysql5.7 mysql5.6</h1>
+<p><em>2020.10.27有效</em></p>
+<ol>
+<li>下载<a href="https://repo.mysql.com/mysql-apt-config_0.8.15-1_all.deb">mysql apt配置程序mysql-apt-config_0.8.15-1_all.deb</a>。</li>
+<li><code>dpkg</code> 安装。
+<ol>
+<li>如果Ubuntu版本没有被自动识别，可以考虑在<a href="https://repo.mysql.com/">该页面</a>自行寻找更新的mysql-apt-config。</li>
+<li>安装时会自动弹出配置选项，选择需要的版本。</li>
+<li>该程序会在apt的源列表中添加包含上面选择的版本的源。</li>
+</ol>
+</li>
+<li><code>apt update</code>更新。</li>
+<li>安装mysql，通过参数指定需要的版本。
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">sudo apt install mysql-client<span class="o">=</span>5.7.30-1debian8
+sudo apt install mysql-community-server<span class="o">=</span>5.7.30-1debian8
+sudo apt install mysql-server<span class="o">=</span>5.7.30-1debian8
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ol>
+<h1 id="启动mysql失败的时候如何排查">启动mysql失败的时候如何排查？</h1>
+<p>关键字：错误日志 error log</p>
+<p>不论是以<code>service</code>或<code>systemctl</code>的形式来启动的，mysql总会留有启动的错误日志。</p>
+<p>通常可以考虑<code>/val/log/mysql/*</code>下面。</p>
+<h2 id="遇到过的错误">遇到过的错误</h2>
+<ol>
+<li>因为卸载不完全等原因，导致数据文件路径*(<code>可以考虑/var/lib/mysql</code>)*下残留数据文件。
+新安装的mysql的innodb加载数据，因为数据不符合预期导致启动终止。清理相关文件即可。</li>
+</ol>
+<h1 id="explain-备忘">EXPLAIN 备忘</h1>
+<p><a href="https://dev.mysql.com/doc/refman/5.7/en/explain-output.html">5.7 explain</a></p>
+<ul>
+<li>id</li>
+<li>select_type
+<ul>
+<li>查询的类型，如简单查询</li>
+</ul>
+</li>
+<li>table
+<ul>
+<li>表名</li>
+</ul>
+</li>
+<li>partitions</li>
+<li>type
+<ul>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/explain-output.html#explain-join-types">mysql 5.7 explain-join-types</a></li>
+<li>访问的形式 以下由好到坏</li>
+<li>system 很快</li>
+<li>const 表示最多从该表中获取一行，并且在开始查询的时候就能获得到结果，被其他查询可以当作常量</li>
+<li>eq_ref 前一个查询的任意一行，在该表中最多返回一行</li>
+<li>ref 相比于eq_ref，从该表中可能返回多行</li>
+<li>fulltext 使用FULLTEXT索引</li>
+<li>ref_or_null 类似ref，只是多扫描NULL的情况</li>
+<li>index_merge 表示索引合并优化开启</li>
+<li>unique_subquery</li>
+<li>index_subquery</li>
+<li>range 扫描部分索引</li>
+<li>index 遍历索引</li>
+<li>ALL 全表扫描</li>
+</ul>
+</li>
+<li>possible_keys
+<ul>
+<li>可能选择的索引</li>
+</ul>
+</li>
+<li>key
+<ul>
+<li>最终选择的索引</li>
+</ul>
+</li>
+<li>key_len
+<ul>
+<li>选择的索引使用的长度 字节数</li>
+</ul>
+</li>
+<li>ref</li>
+<li>rows
+<ul>
+<li>要扫描的行数</li>
+</ul>
+</li>
+<li>filtered</li>
+<li>Extra 其他相关的信息，以下为较重要的
+<ul>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/explain-output.html#explain-extra-information">5.7 explain-extra-information</a></li>
+<li>Using filesort 需要额外的排序来满足需求</li>
+<li>Using index 覆盖索引</li>
+<li>Using index condition 索引下推</li>
+<li>Using index for group-by 可以通过索引来满足<code>GROUP BY</code>或<code>DISTINCT</code>查询</li>
+<li>Using temporary 需要创建临时表来处理结果，通常因为查询存在由不同的列<code>GROUP BY</code>或<code>ORDER BY</code></li>
+<li>Using where 表示在引擎获取到数据之后，系统需要再次过滤。这暗示了可以新建索引来优化。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-10-28
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/mysql/">MySQL</a>
+          <a href="/tags/memo/">memo</a>
+          <a href="/tags/how-to/">how-to</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/eventloop/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis的事件循环简单分析</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/mysql/lock_analysis/">
+            <span class="next-text nav-default">MySQL各种情况的加锁分析</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-10-28 19:02:37 \u002b0800 \u002b0800',
+        title: 'MySQL相关备忘录',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

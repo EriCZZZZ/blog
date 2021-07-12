@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>process on blog</title>
+    <link>https://blog.er1c.dev/tags/process/</link>
+    <description>Recent content in process on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 15 Oct 2020 20:23:23 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/process/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>进程与调度</title>
+      <link>https://blog.er1c.dev/post/linux/process/</link>
+      <pubDate>Thu, 15 Oct 2020 20:23:23 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/process/</guid>
+      <description>进程是什么 是运行的二进制程序与其所拥有的资源集合。 是调度的被操作者。 task_struct 进程控制块，存储了进程的相关信息： task_struct definition 进程自己的信息 命名空间 内存 文件 信</description>
+    </item>
+    
+  </channel>
+</rss>

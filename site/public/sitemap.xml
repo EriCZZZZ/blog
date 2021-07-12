@@ -1,0 +1,549 @@
+<?xml-stylesheet type="text/xsl" href="https://blog.er1c.dev/sitemap.xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://blog.er1c.dev/</loc>
+    <lastmod>2021-07-12T22:04:54+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/daily_problems/</loc>
+    <lastmod>2021-07-12T22:04:54+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/daily_problems/goland_unexpected_syntax_error/</loc>
+    <lastmod>2021-07-12T22:04:54+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/memo/</loc>
+    <lastmod>2021-07-12T22:04:54+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/</loc>
+    <lastmod>2021-07-12T22:04:54+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/</loc>
+    <lastmod>2021-07-12T22:04:54+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/other/</loc>
+    <lastmod>2021-06-03T00:39:43+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/realme-v15/</loc>
+    <lastmod>2021-06-03T00:39:43+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/other/realme_v15_unlock_bl/</loc>
+    <lastmod>2021-06-03T00:39:43+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/book/</loc>
+    <lastmod>2021-05-31T23:13:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/compilers-book/</loc>
+    <lastmod>2021-05-31T23:13:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/compile/compilers/2/</loc>
+    <lastmod>2021-05-31T23:13:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/compile/compilers/1/</loc>
+    <lastmod>2021-05-14T16:54:42+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/go/</loc>
+    <lastmod>2021-05-11T16:30:05+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/language/go/chan/</loc>
+    <lastmod>2021-05-11T16:30:05+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/go-src/</loc>
+    <lastmod>2021-05-11T16:30:05+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/what/</loc>
+    <lastmod>2021-05-11T16:30:05+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/language/go/memory_model/</loc>
+    <lastmod>2021-05-01T03:06:06+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/eat_too_much/diff3/</loc>
+    <lastmod>2021-04-16T17:08:35+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/eat-too-much/</loc>
+    <lastmod>2021-04-16T17:08:35+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/how/</loc>
+    <lastmod>2021-04-16T17:08:35+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/distuributed/crdt/</loc>
+    <lastmod>2021-04-05T10:59:43+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/data_struct/</loc>
+    <lastmod>2021-04-05T10:59:43+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/distributed/</loc>
+    <lastmod>2021-04-05T10:59:43+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/hugo/</loc>
+    <lastmod>2021-03-30T19:47:06+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/memo/hugo/</loc>
+    <lastmod>2021-03-30T19:47:06+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/command/</loc>
+    <lastmod>2021-03-16T23:14:06+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/linux/</loc>
+    <lastmod>2021-03-16T23:14:06+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/linux/expect/</loc>
+    <lastmod>2021-03-16T23:14:06+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/redis/</loc>
+    <lastmod>2021-03-11T11:09:02+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/cluster_use/</loc>
+    <lastmod>2021-03-11T11:09:02+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/redis-cluster-step-by-step/</loc>
+    <lastmod>2021-03-11T11:09:02+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/bio/</loc>
+    <lastmod>2021-03-09T08:59:52+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/aof/</loc>
+    <lastmod>2021-03-02T23:39:28+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/rdb/</loc>
+    <lastmod>2021-02-07T22:00:12+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</loc>
+    <lastmod>2021-01-21T20:04:39+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/feat-in-action/</loc>
+    <lastmod>2021-01-21T20:04:39+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/http/</loc>
+    <lastmod>2020-11-30T23:05:21+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/https/</loc>
+    <lastmod>2020-11-30T23:05:21+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/why/</loc>
+    <lastmod>2020-11-30T23:05:21+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/http/websocket/</loc>
+    <lastmod>2020-11-30T23:05:21+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/how-redis-work/</loc>
+    <lastmod>2020-11-30T21:52:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_hash/</loc>
+    <lastmod>2020-11-30T21:52:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_sortedset/</loc>
+    <lastmod>2020-11-28T10:57:19+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_set/</loc>
+    <lastmod>2020-11-26T01:34:30+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/algorithm/</loc>
+    <lastmod>2020-11-24T14:34:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/redis_pqsort/</loc>
+    <lastmod>2020-11-24T14:34:03+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_list/</loc>
+    <lastmod>2020-11-22T23:26:48+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/memo/abc/</loc>
+    <lastmod>2020-11-22T23:14:59+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/abbr/</loc>
+    <lastmod>2020-11-22T23:13:13+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/memo/abbr/</loc>
+    <lastmod>2020-11-22T23:13:13+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_bitmap/</loc>
+    <lastmod>2020-11-22T00:27:36+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_common/</loc>
+    <lastmod>2020-11-11T20:21:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/how_redis_work_string/</loc>
+    <lastmod>2020-11-11T16:59:20+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/data_struct/</loc>
+    <lastmod>2020-11-08T00:14:02+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/main_process/</loc>
+    <lastmod>2020-11-03T03:59:02+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/redis/eventloop/</loc>
+    <lastmod>2020-11-01T19:30:35+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/how-to/</loc>
+    <lastmod>2020-10-28T19:02:37+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/mysql/</loc>
+    <lastmod>2020-10-28T19:02:37+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/memo/mysql/</loc>
+    <lastmod>2020-10-28T19:02:37+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/mysql/lock_analysis/</loc>
+    <lastmod>2020-10-27T02:46:48+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/kernel/</loc>
+    <lastmod>2020-10-15T20:23:23+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/process/</loc>
+    <lastmod>2020-10-15T20:23:23+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/linux/process/</loc>
+    <lastmod>2020-10-15T20:23:23+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/memory/</loc>
+    <lastmod>2020-09-02T02:27:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/linux/memory/</loc>
+    <lastmod>2020-09-02T02:27:00+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/exception/</loc>
+    <lastmod>2020-08-29T10:44:52+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/interrupt/</loc>
+    <lastmod>2020-08-29T10:44:52+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/linux/interrupt-and-exception/</loc>
+    <lastmod>2020-08-29T10:44:52+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/cors/</loc>
+    <lastmod>2020-08-21T23:17:27+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/http/what-is-http-security/</loc>
+    <lastmod>2020-08-21T23:17:27+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/memo/</loc>
+    <lastmod>2020-08-21T22:31:07+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/regex/</loc>
+    <lastmod>2020-08-21T20:31:59+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/memo/regex/</loc>
+    <lastmod>2020-08-21T20:31:59+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/about-me/</loc>
+    <lastmod>2020-08-18T22:35:15+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/tags/dairy/</loc>
+    <lastmod>2020-08-18T22:35:15+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/post/linux/nc_and_pv/</loc>
+    <lastmod>2020-08-18T22:34:28+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.er1c.dev/categories/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+</urlset>

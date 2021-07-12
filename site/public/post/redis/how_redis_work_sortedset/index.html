@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>有序集合的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="redis有序集合相关指令的具体实现。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="有序集合的实现" />
+<meta property="og:description" content="redis有序集合相关指令的具体实现。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-28T10:57:19&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-28T10:57:19&#43;08:00" />
+
+<meta itemprop="name" content="有序集合的实现">
+<meta itemprop="description" content="redis有序集合相关指令的具体实现。"><meta itemprop="datePublished" content="2020-11-28T10:57:19&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-28T10:57:19&#43;08:00" />
+<meta itemprop="wordCount" content="1999">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="有序集合的实现"/>
+<meta name="twitter:description" content="redis有序集合相关指令的具体实现。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">有序集合的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-28 </span>
+        
+          <span class="more-meta"> 约 1999 字 </span>
+          <span class="more-meta"> 预计阅读 4 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#普遍的实现思路">普遍的实现思路</a></li>
+    <li><a href="#zaddzincrby"><code>ZADD</code>/<code>ZINCRBY</code></a></li>
+    <li><a href="#zrem"><code>ZREM</code></a></li>
+    <li><a href="#zunionstorezinterstore"><code>ZUNIONSTORE</code>/<code>ZINTERSTORE</code></a></li>
+    <li><a href="#zrangezrevrange"><code>ZRANGE</code>/<code>ZREVRANGE</code></a></li>
+    <li><a href="#zrangebyscorezrevrangebyscore"><code>ZRANGEBYSCORE</code>/<code>ZREVRANGEBYSCORE</code></a></li>
+    <li><a href="#zrangebylexzrevrangebylex"><code>ZRANGEBYLEX</code>/<code>ZREVRANGEBYLEX</code></a></li>
+    <li><a href="#zremrangebyrankzremrangebyscorezremrangebylex"><code>ZREMRANGEBYRANK</code>/<code>ZREMRANGEBYSCORE</code>/<code>ZREMRANGEBYLEX</code></a></li>
+    <li><a href="#zcountzlexcount"><code>ZCOUNT</code>/<code>ZLEXCOUNT</code></a></li>
+    <li><a href="#zcard"><code>ZCARD</code></a></li>
+    <li><a href="#zscore"><code>ZSCORE</code></a></li>
+    <li><a href="#zrankzrevrank"><code>ZRANK</code>/<code>ZREVRANK</code></a></li>
+    <li><a href="#zpopminzpopmax"><code>ZPOPMIN</code>/<code>ZPOPMAX</code></a></li>
+    <li><a href="#bzpopminbzpopmax"><code>BZPOPMIN</code>/<code>BZPOPMAX</code></a></li>
+    <li><a href="#zscan"><code>ZSCAN</code></a></li>
+    <li><a href="#sort"><code>SORT</code></a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>redis有序集合相关指令的具体实现。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p>分类按照命令表的flag来确定，有序集合的是包含<code>@sortedset</code>标签的指令。</p>
+<p><em>基于redis 6.0</em></p>
+<h1 id="数据结构">数据结构</h1>
+<p>在数据量较小的时候，底层由压缩列表来承载数据；
+数据量较大时，使用<code>zset</code>类型来承载数据。
+数据大小的判断由参数<code>zset_max_ziplist_value</code>来决定。</p>
+<p><a href="/post/redis/data_struct/#压缩列表">这里</a>有压缩列表结构的简单介绍。</p>
+<p>先来看看<code>zset</code>的实现。
+<code>zset</code>由一个哈希表和一个跳表组成，
+和那道“O(1)读取的链表”的面试题很像，
+哈希表用于搜索，跳表用于遍历。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">zset</span> <span class="p">{</span>
+  <span class="n">dict</span> <span class="o">*</span><span class="n">dict</span><span class="p">;</span> <span class="c1">// 哈希表
+</span><span class="c1"></span>  <span class="n">zskiplist</span> <span class="o">*</span><span class="n">zsl</span><span class="p">;</span> <span class="c1">// zset版本的跳表
+</span><span class="c1"></span><span class="p">}</span> <span class="n">zset</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>哈希表可以参考<a href="/post/redis/data_struct/#哈希表">这篇文章</a>，这里就不赘述了。</p>
+<p>跳表也可以参考<a href="/post/redis/data_struct/#跳表">这里</a>。</p>
+<p>最后再来看创建的代码就比较清晰了：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// 创建zset的数据结构
+</span><span class="c1">// src/t_zset.c#zaddGenericCommand#1603
+</span><span class="c1"></span><span class="k">if</span> <span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">zset_max_ziplist_entries</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span>
+  <span class="n">server</span><span class="p">.</span><span class="n">zset_max_ziplist_value</span> <span class="o">&lt;</span> <span class="n">sdslen</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">argv</span><span class="p">[</span><span class="n">scoreidx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">))</span>
+<span class="p">{</span>
+  <span class="c1">// 数据量较大时，直接创建zset类型
+</span><span class="c1"></span>  <span class="n">zobj</span> <span class="o">=</span> <span class="n">createZsetObject</span><span class="p">();</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+  <span class="c1">// 如果要插入的元素数量小于利用压缩列表的数量上限
+</span><span class="c1"></span>  <span class="c1">// 创建一个压缩列表来承载数据
+</span><span class="c1"></span>  <span class="n">zobj</span> <span class="o">=</span> <span class="n">createZsetZiplistObject</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="n">dbAdd</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">db</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">zobj</span><span class="p">);</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="普遍的实现思路">普遍的实现思路</h1>
+<p>有序集合在元素容量较小时，采用压缩列表来承载；
+反之，由上述的<code>zset</code>来存储数据。</p>
+<p>两者其实类似，都有一个链表式的结构来维护顺序。
+为了优化元素较多时查询的性能，增加了一个哈希表，
+为了优化元素较多时定位的性能，使用跳表来降低时间复杂度。</p>
+<h1 id="zaddzincrby"><code>ZADD</code>/<code>ZINCRBY</code></h1>
+<p>两者均由<code>zaddGenericCommnad</code>实现。</p>
+<p>首先检查解析参数，随后获取<code>zset</code>实例，如果不存在则新建一个。</p>
+<p>一切就绪后，遍历要加入的元素，调用<code>zsetAdd</code>来插入到集合中。</p>
+<p><code>zsetAdd</code>中处理了检查元素是否存在、若干flag的检查，以及插入操作。
+类似集合，当元素的数量超过阈值时，
+会通过<code>zsetConvert</code>将底层数据结果由压缩列表转换成<code>zset</code>实现。</p>
+<h1 id="zrem"><code>ZREM</code></h1>
+<p>通过<code>zsetDel</code>删除元素，如果删除后为空，类似列表、集合，会将有序集合的key删除。</p>
+<h1 id="zunionstorezinterstore"><code>ZUNIONSTORE</code>/<code>ZINTERSTORE</code></h1>
+<p><code>zunionInterGenericCommand</code></p>
+<p>类似集合的交并操作，会先将若干集合按照大小进行排序来避免不必要的运算量。</p>
+<p>对于交集，用数量最小的集合来驱动，若一个元素在每个集合中都出现了，
+按照权重和聚合函数来计算新的score，
+将结果加入到目标有序集合。</p>
+<p>对于并集，会先遍历每个集合，增加到辅助哈希表中，
+这个过程中会计算新的得分。
+在遍历完成后，开始将辅助哈希表中的元素填充到目标有序集合中。</p>
+<h1 id="zrangezrevrange"><code>ZRANGE</code>/<code>ZREVRANGE</code></h1>
+<p><code>zrangeGenericCommand</code>，根据底层类型的不同，进行了相应的操作。</p>
+<p>压缩列表比较简单，根据正/反，先调用<code>ziplistIndex</code>定位，
+然后调用<code>zzlNext</code>/<code>zzlPrev</code>来进行遍历。</p>
+<p>类似的，<code>zset</code>类型的利用<code>zslGetElementByRank</code>来进行定位，
+随后使用跳表的<code>forward</code>/<code>backward</code>指针进行遍历。</p>
+<h1 id="zrangebyscorezrevrangebyscore"><code>ZRANGEBYSCORE</code>/<code>ZREVRANGEBYSCORE</code></h1>
+<p>与<code>ZRANGE</code>的实现思路类似。</p>
+<p><code>genericZrangebyscoreCommand</code>首先会利用<code>zslParseRange</code>解析指令中的分数范围，
+随后根据数据结构的不同采取相应的操作来遍历，并返回结果。
+核心的逻辑还是通过range来查找对应范围的遍历的起点，随后常规的遍历直到分数不符合预期结束。</p>
+<p>一个有意思的点是在扫描完成之前，
+<code>ZRANGEBYSCORE</code>指令无法得知有多少元素需要返回。
+所以在写入返回值时，
+使用了<code>addReplyDeferredLen</code>来处理这种特殊情况，
+等到最后确定长度后，调用<code>setDeferredArrayLen</code>来设置长度。</p>
+<h1 id="zrangebylexzrevrangebylex"><code>ZRANGEBYLEX</code>/<code>ZREVRANGEBYLEX</code></h1>
+<p>与前面的range类型的指令相似。</p>
+<p>需要指出几个不同或有意思的点是：</p>
+<ol>
+<li>字典序的规则是 A C a b c 这样，即大小写敏感的。</li>
+<li>如果有序集合中有多个分数，这个结果是无意义的。</li>
+</ol>
+<h1 id="zremrangebyrankzremrangebyscorezremrangebylex"><code>ZREMRANGEBYRANK</code>/<code>ZREMRANGEBYSCORE</code>/<code>ZREMRANGEBYLEX</code></h1>
+<p>由<code>zremrangeGenericCommand</code>实现。
+分别是根据下标、分数、字典序来删除符合条件的数据。
+移除的与前面的range函数查询到的结果一致，
+这里就不赘述了。</p>
+<h1 id="zcountzlexcount"><code>ZCOUNT</code>/<code>ZLEXCOUNT</code></h1>
+<p><code>ZCOUNT</code>对于压缩列表，通过遍历实现；
+<code>zset</code>会通过查找传入的分数范围定位到头尾两个节点，
+根据span计算出两个节点中的元素数量。</p>
+<p>字典序的命令实现类似。</p>
+<h1 id="zcard"><code>ZCARD</code></h1>
+<p>返回长度。</p>
+<h1 id="zscore"><code>ZSCORE</code></h1>
+<p>通过遍历（压缩列表）或哈希表查找（<code>zset</code>），来查询到节点，再获得分数。</p>
+<h1 id="zrankzrevrank"><code>ZRANK</code>/<code>ZREVRANK</code></h1>
+<p>类似<code>ZSCORE</code>的方式，定位到节点，然后返回下标。</p>
+<h1 id="zpopminzpopmax"><code>ZPOPMIN</code>/<code>ZPOPMAX</code></h1>
+<p>落到<code>genericZpopCommand</code>。</p>
+<p>核心实现还是很简单清晰的，
+循环需要pop的个数，
+循环中定位到头/尾，
+写入客户端，
+最后从有序集合中删除。</p>
+<h1 id="bzpopminbzpopmax"><code>BZPOPMIN</code>/<code>BZPOPMAX</code></h1>
+<p>落到<code>blockingGenericZpopCommand</code>。
+如果由集合不为空，会调用<code>genericZpopCommand</code>来正常的执行。
+如果集合为空，那么使用<code>blockForKeys</code>来等待。</p>
+<p><a href="/post/redis/data_struct/#阻塞指令的实现">这里</a>有<code>blockForKeys</code>的简单分析。</p>
+<h1 id="zscan"><code>ZSCAN</code></h1>
+<p>最终落到<code>scanGenericCommand</code>上来完成。
+可以看下这篇文章<a href="/post/redis/how_redis_work_common/#scan相关的实现">scan相关的实现</a>。</p>
+<h1 id="sort"><code>SORT</code></h1>
+<p>与列表的实现类似。可以参考<a href="/post/redis/how_redis_work_list/#sort">列表的<code>SORT</code>接口实现</a></p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-28
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/how_redis_work_hash/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">哈希表的实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/how_redis_work_set/">
+            <span class="next-text nav-default">集合的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-28 10:57:19 \u002b0800 \u002b0800',
+        title: '有序集合的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

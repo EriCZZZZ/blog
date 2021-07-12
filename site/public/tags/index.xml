@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on blog</title>
+    <link>https://blog.er1c.dev/tags/</link>
+    <description>Recent content in Tags on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Mon, 12 Jul 2021 22:04:54 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>daily_problems</title>
+      <link>https://blog.er1c.dev/tags/daily_problems/</link>
+      <pubDate>Mon, 12 Jul 2021 22:04:54 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/daily_problems/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>memo</title>
+      <link>https://blog.er1c.dev/tags/memo/</link>
+      <pubDate>Mon, 12 Jul 2021 22:04:54 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/memo/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>other</title>
+      <link>https://blog.er1c.dev/tags/other/</link>
+      <pubDate>Thu, 03 Jun 2021 00:39:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/other/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>realme v15</title>
+      <link>https://blog.er1c.dev/tags/realme-v15/</link>
+      <pubDate>Thu, 03 Jun 2021 00:39:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/realme-v15/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>book</title>
+      <link>https://blog.er1c.dev/tags/book/</link>
+      <pubDate>Mon, 31 May 2021 23:13:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/book/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>compilers-book</title>
+      <link>https://blog.er1c.dev/tags/compilers-book/</link>
+      <pubDate>Mon, 31 May 2021 23:13:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/compilers-book/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>go</title>
+      <link>https://blog.er1c.dev/tags/go/</link>
+      <pubDate>Tue, 11 May 2021 16:30:05 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/go/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>go-src</title>
+      <link>https://blog.er1c.dev/tags/go-src/</link>
+      <pubDate>Tue, 11 May 2021 16:30:05 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/go-src/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>what</title>
+      <link>https://blog.er1c.dev/tags/what/</link>
+      <pubDate>Tue, 11 May 2021 16:30:05 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/what/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>eat-too-much</title>
+      <link>https://blog.er1c.dev/tags/eat-too-much/</link>
+      <pubDate>Fri, 16 Apr 2021 17:08:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/eat-too-much/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>how</title>
+      <link>https://blog.er1c.dev/tags/how/</link>
+      <pubDate>Fri, 16 Apr 2021 17:08:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/how/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>data_struct</title>
+      <link>https://blog.er1c.dev/tags/data_struct/</link>
+      <pubDate>Mon, 05 Apr 2021 10:59:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/data_struct/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>distributed</title>
+      <link>https://blog.er1c.dev/tags/distributed/</link>
+      <pubDate>Mon, 05 Apr 2021 10:59:43 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/distributed/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>hugo</title>
+      <link>https://blog.er1c.dev/tags/hugo/</link>
+      <pubDate>Tue, 30 Mar 2021 19:47:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/hugo/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>command</title>
+      <link>https://blog.er1c.dev/tags/command/</link>
+      <pubDate>Tue, 16 Mar 2021 23:14:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/command/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>linux</title>
+      <link>https://blog.er1c.dev/tags/linux/</link>
+      <pubDate>Tue, 16 Mar 2021 23:14:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/linux/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>redis</title>
+      <link>https://blog.er1c.dev/tags/redis/</link>
+      <pubDate>Thu, 11 Mar 2021 11:09:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/redis/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>redis-cluster-step-by-step</title>
+      <link>https://blog.er1c.dev/tags/redis-cluster-step-by-step/</link>
+      <pubDate>Thu, 11 Mar 2021 11:09:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/redis-cluster-step-by-step/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>feat-in-action</title>
+      <link>https://blog.er1c.dev/tags/feat-in-action/</link>
+      <pubDate>Thu, 21 Jan 2021 20:04:39 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/feat-in-action/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>HTTP</title>
+      <link>https://blog.er1c.dev/tags/http/</link>
+      <pubDate>Mon, 30 Nov 2020 23:05:21 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/http/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>HTTPS</title>
+      <link>https://blog.er1c.dev/tags/https/</link>
+      <pubDate>Mon, 30 Nov 2020 23:05:21 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/https/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>why</title>
+      <link>https://blog.er1c.dev/tags/why/</link>
+      <pubDate>Mon, 30 Nov 2020 23:05:21 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/why/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>how-redis-work</title>
+      <link>https://blog.er1c.dev/tags/how-redis-work/</link>
+      <pubDate>Mon, 30 Nov 2020 21:52:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/how-redis-work/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>algorithm</title>
+      <link>https://blog.er1c.dev/tags/algorithm/</link>
+      <pubDate>Tue, 24 Nov 2020 14:34:03 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/algorithm/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>abbr</title>
+      <link>https://blog.er1c.dev/tags/abbr/</link>
+      <pubDate>Sun, 22 Nov 2020 23:13:13 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/abbr/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>how-to</title>
+      <link>https://blog.er1c.dev/tags/how-to/</link>
+      <pubDate>Wed, 28 Oct 2020 19:02:37 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/how-to/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>MySQL</title>
+      <link>https://blog.er1c.dev/tags/mysql/</link>
+      <pubDate>Wed, 28 Oct 2020 19:02:37 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/mysql/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>kernel</title>
+      <link>https://blog.er1c.dev/tags/kernel/</link>
+      <pubDate>Thu, 15 Oct 2020 20:23:23 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/kernel/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>process</title>
+      <link>https://blog.er1c.dev/tags/process/</link>
+      <pubDate>Thu, 15 Oct 2020 20:23:23 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/process/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>memory</title>
+      <link>https://blog.er1c.dev/tags/memory/</link>
+      <pubDate>Wed, 02 Sep 2020 02:27:00 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/memory/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>exception</title>
+      <link>https://blog.er1c.dev/tags/exception/</link>
+      <pubDate>Sat, 29 Aug 2020 10:44:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/exception/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>interrupt</title>
+      <link>https://blog.er1c.dev/tags/interrupt/</link>
+      <pubDate>Sat, 29 Aug 2020 10:44:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/interrupt/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>CORS</title>
+      <link>https://blog.er1c.dev/tags/cors/</link>
+      <pubDate>Fri, 21 Aug 2020 23:17:27 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/cors/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>regex</title>
+      <link>https://blog.er1c.dev/tags/regex/</link>
+      <pubDate>Fri, 21 Aug 2020 20:31:59 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/regex/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>dairy</title>
+      <link>https://blog.er1c.dev/tags/dairy/</link>
+      <pubDate>Tue, 18 Aug 2020 22:35:15 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/tags/dairy/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

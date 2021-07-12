@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>redis指令的实现-基础接口 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="这里主要用来放置数据库接口等基础接口的简单分析。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/redis/how_redis_work_common/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="redis指令的实现-基础接口" />
+<meta property="og:description" content="这里主要用来放置数据库接口等基础接口的简单分析。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/redis/how_redis_work_common/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-11T20:21:00&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-11T20:21:00&#43;08:00" />
+
+<meta itemprop="name" content="redis指令的实现-基础接口">
+<meta itemprop="description" content="这里主要用来放置数据库接口等基础接口的简单分析。"><meta itemprop="datePublished" content="2020-11-11T20:21:00&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-11T20:21:00&#43;08:00" />
+<meta itemprop="wordCount" content="4949">
+<meta itemprop="keywords" content="redis,what,how-redis-work," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="redis指令的实现-基础接口"/>
+<meta name="twitter:description" content="这里主要用来放置数据库接口等基础接口的简单分析。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">redis指令的实现-基础接口</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-11 </span>
+        
+          <span class="more-meta"> 约 4949 字 </span>
+          <span class="more-meta"> 预计阅读 10 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#基础的参数格式">基础的参数格式</a></li>
+    <li><a href="#获取key对应的对象">获取key对应的对象</a></li>
+    <li><a href="#返回结果到客户端">返回结果到客户端</a></li>
+    <li><a href="#操作数据库的键值对">操作数据库的键值对</a>
+      <ul>
+        <li><a href="#设置key">设置key</a></li>
+      </ul>
+    </li>
+    <li><a href="#过期时间的实现">过期时间的实现</a></li>
+    <li><a href="#阻塞指令的实现">阻塞指令的实现</a></li>
+    <li><a href="#scan相关的实现">scan相关的实现</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>这里主要用来放置数据库接口等基础接口的简单分析。</p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_common/">redis指令的实现-基础接口</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_string/">redis指令的实现-字符串</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_bitmap/">位图的基本实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_list/">列表相关的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_set/">集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_sortedset/">有序集合的实现</a></li>
+                    
+                        <li><a href="https://blog.er1c.dev/post/redis/how_redis_work_hash/">哈希表的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<h1 id="基础的参数格式">基础的参数格式</h1>
+<p>对于每个<code>client</code>中有两个变量来存储参数的个数和具体的值：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c">  <span class="c1">// ...
+</span><span class="c1"></span>  <span class="c1">// server.h#800
+</span><span class="c1"></span>    <span class="kt">int</span> <span class="n">argc</span><span class="p">;</span>               <span class="cm">/* 当前命令的参数的个数 */</span>
+    <span class="n">robj</span> <span class="o">**</span><span class="n">argv</span><span class="p">;</span>            <span class="cm">/* 参数的数组，0是指令名（如get），后续依次递增 */</span>
+  <span class="c1">// ...
+</span></code></pre></td></tr></table>
+</div>
+</div><h1 id="获取key对应的对象">获取key对应的对象</h1>
+<p>首先看下基本的调用关系</p>
+<pre><code class="language-ditaa" data-lang="ditaa">@startuml
+ditaa
+                        +-----------+
+            +----------&gt;| lookupKey |&lt;-----------+
+            |           +-----------+            |
+            |                                    |
++-----------+----------+             +-----------+-----------+
+|lookupKeyReadWithFlags|             |lookupKeyWriteWithFlags|
++-----------+----------+             +-----------+-----------+
+            ^                                    ^               
+            |                                    |               
+            |                                    |               
++-----------+----------+             +-----------+-----------+
+|    lookupKeyRead     |             |     lookupKeyWrite    |
++-----------+----------+             +-----------------------+
+            ^                                    ^               
+            |                                    |               
+            |                                    |               
++-----------+----------+             +-----------+-----------+
+| lookupKeyReadOrReply |             | lookupKeyWriteOrReply |
++-----------+----------+             +-----------------------+
+@enduml
+</code></pre><p>最基本的实现是<code>lookupKey</code>。
+函数调用了哈希表的接口<code>dictFind</code>，获得对应的<code>dictEntry</code>或如果不存在的话返回空。
+如果key不存在，直接返回；
+如果存在，首先通过<code>dictGetVal</code>宏获得对应的<code>robj</code>，然后根据逐出策略来更新LFU的相关统计或用于LRU的最后访问时间。</p>
+<p>调用<code>lookupKey</code>的有三个函数：</p>
+<ul>
+<li>lookupKeyReadWithFlags</li>
+<li>lookupKeyWriteWithFlags</li>
+<li>scanDatabaseForReadyLists</li>
+</ul>
+<p>首先来看下<code>lookupKeyReadWithFlags</code>，这是所有读取为目的查询接口的底层实现。</p>
+<p><code>lookupKeyReadWithFlags</code>首先调用了<code>expireIfNeeded</code>来判断key是否过期并进行相应处理。</p>
+<p>然后调用<code>lookupKey</code>来查找，最后返回结果。</p>
+<p>然后看下<code>lookupKeyWriteWithFlags</code>，其实现非常简单，调用了<code>expireIfNeeded</code>检查过期情况，然后调用<code>lookupKey</code>来查找，返回。</p>
+<p>还有一些更高级的接口，来提供一些封装，如：</p>
+<ul>
+<li><code>lookupKeyRead</code>对<code>lookupKeyReadWithFlags</code>进行简单封装，提供了常用的查询</li>
+<li><code>lookupKeyReadOrReply(client, key, reply)</code>如果查询不到就向客户端返回结果<code>reply</code></li>
+<li><code>lookupKeyWrite</code>和<code>lookupKeyWriteOrReply</code>类似read版本</li>
+</ul>
+<h1 id="返回结果到客户端">返回结果到客户端</h1>
+<p><em>src/networking.c</em></p>
+<p>还是先看下调用关系。</p>
+<p>最基础的两个<code>_addReplyToBuffer</code>和<code>_addReplyProtoToList</code>，分别将数据直接写入buffer或者加入到client的<code>reply</code>链表中。
+下面是细节一些的实现。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/networking.c
+</span><span class="c1"></span><span class="cm">/* -----------------------------------------------------------------------------
+</span><span class="cm"> * Low level functions to add more data to output buffers.
+</span><span class="cm"> * -------------------------------------------------------------------------- */</span>
+
+<span class="kt">int</span> <span class="nf">_addReplyToBuffer</span><span class="p">(</span><span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">s</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">size_t</span> <span class="n">available</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">)</span><span class="o">-</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">bufpos</span><span class="p">;</span> <span class="c1">// 获取client的buf剩余长度
+</span><span class="c1"></span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">CLIENT_CLOSE_AFTER_REPLY</span><span class="p">)</span> <span class="k">return</span> <span class="n">C_OK</span><span class="p">;</span> <span class="c1">// 如果已经关闭了，直接返回
+</span><span class="c1"></span>
+    <span class="c1">// 如果reply列表不为空（即用了另一个接口），那么不能再用写入到buffer的这个接口
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">listLength</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">reply</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="n">C_ERR</span><span class="p">;</span>
+
+    <span class="c1">// 如果buffer的剩余长度不足，那么返回错误
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">len</span> <span class="o">&gt;</span> <span class="n">available</span><span class="p">)</span> <span class="k">return</span> <span class="n">C_ERR</span><span class="p">;</span>
+
+    <span class="c1">// 将数据拷贝过去
+</span><span class="c1"></span>    <span class="n">memcpy</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">buf</span><span class="o">+</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">bufpos</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">len</span><span class="p">);</span>
+    <span class="n">c</span><span class="o">-&gt;</span><span class="n">bufpos</span><span class="o">+=</span><span class="n">len</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">C_OK</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">_addReplyProtoToList</span><span class="p">(</span><span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">s</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">CLIENT_CLOSE_AFTER_REPLY</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span> <span class="c1">// 如果已经关闭了，直接返回
+</span><span class="c1"></span>
+    <span class="n">listNode</span> <span class="o">*</span><span class="n">ln</span> <span class="o">=</span> <span class="n">listLast</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">reply</span><span class="p">);</span> <span class="c1">// 获取reply链表的尾部节点
+</span><span class="c1"></span>    <span class="n">clientReplyBlock</span> <span class="o">*</span><span class="n">tail</span> <span class="o">=</span> <span class="n">ln</span><span class="o">?</span> <span class="n">listNodeValue</span><span class="p">(</span><span class="n">ln</span><span class="p">)</span><span class="o">:</span> <span class="nb">NULL</span><span class="p">;</span> <span class="c1">// 如果没有插入过，那有可能为空
+</span><span class="c1"></span>
+    <span class="cm">/* Append to tail string when possible. */</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">tail</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 首先尝试去尽量填充到尾部节点的空间
+</span><span class="c1"></span>        <span class="n">size_t</span> <span class="n">avail</span> <span class="o">=</span> <span class="n">tail</span><span class="o">-&gt;</span><span class="n">size</span> <span class="o">-</span> <span class="n">tail</span><span class="o">-&gt;</span><span class="n">used</span><span class="p">;</span>
+        <span class="n">size_t</span> <span class="n">copy</span> <span class="o">=</span> <span class="n">avail</span> <span class="o">&gt;=</span> <span class="n">len</span><span class="o">?</span> <span class="nl">len</span><span class="p">:</span> <span class="n">avail</span><span class="p">;</span>
+        <span class="n">memcpy</span><span class="p">(</span><span class="n">tail</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">+</span> <span class="n">tail</span><span class="o">-&gt;</span><span class="n">used</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">copy</span><span class="p">);</span>
+        <span class="n">tail</span><span class="o">-&gt;</span><span class="n">used</span> <span class="o">+=</span> <span class="n">copy</span><span class="p">;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="n">copy</span><span class="p">;</span>
+        <span class="n">len</span> <span class="o">-=</span> <span class="n">copy</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 如果还有剩余的数据，那创建一个新的节点，然后将数据填充进去
+</span><span class="c1"></span>        <span class="n">size_t</span> <span class="n">size</span> <span class="o">=</span> <span class="n">len</span> <span class="o">&lt;</span> <span class="n">PROTO_REPLY_CHUNK_BYTES</span><span class="o">?</span> <span class="nl">PROTO_REPLY_CHUNK_BYTES</span><span class="p">:</span> <span class="n">len</span><span class="p">;</span>
+        <span class="n">tail</span> <span class="o">=</span> <span class="n">zmalloc</span><span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">clientReplyBlock</span><span class="p">));</span> <span class="c1">// 分配新的内存
+</span><span class="c1"></span>        <span class="c1">// 计算相应的数据
+</span><span class="c1"></span>        <span class="n">tail</span><span class="o">-&gt;</span><span class="n">size</span> <span class="o">=</span> <span class="n">zmalloc_usable</span><span class="p">(</span><span class="n">tail</span><span class="p">)</span> <span class="o">-</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">clientReplyBlock</span><span class="p">);</span>
+        <span class="n">tail</span><span class="o">-&gt;</span><span class="n">used</span> <span class="o">=</span> <span class="n">len</span><span class="p">;</span>
+        <span class="n">memcpy</span><span class="p">(</span><span class="n">tail</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">len</span><span class="p">);</span> <span class="c1">// 拷贝
+</span><span class="c1"></span>        <span class="n">listAddNodeTail</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">reply</span><span class="p">,</span> <span class="n">tail</span><span class="p">);</span> <span class="c1">// 把新节点接到尾部
+</span><span class="c1"></span>        <span class="n">c</span><span class="o">-&gt;</span><span class="n">reply_bytes</span> <span class="o">+=</span> <span class="n">tail</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">asyncCloseClientOnOutputBufferLimitReached</span><span class="p">(</span><span class="n">c</span><span class="p">);</span> <span class="c1">// todo
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后在简单看下每次向客户端写入数据都会调用的<code>prepareClientToWrite</code>。
+函数检查客户端的若干参数，来判断是否允许写入，
+以及之前如果没有注册的话，将“写入数据到socket”这个handler注册到事件循环中(<code>clientInstallWriteHandler</code>)。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// src/networking.c#233
+</span><span class="c1"></span><span class="kt">int</span> <span class="nf">prepareClientToWrite</span><span class="p">(</span><span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">CLIENT_LUA</span><span class="o">|</span><span class="n">CLIENT_MODULE</span><span class="p">))</span> <span class="k">return</span> <span class="n">C_OK</span><span class="p">;</span> <span class="c1">// 对于LUA脚本，不需要注册事件
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">CLIENT_CLOSE_ASAP</span><span class="p">)</span> <span class="k">return</span> <span class="n">C_ERR</span><span class="p">;</span> <span class="c1">// 如果尽快关闭标志被设置，直接返回错误
+</span><span class="c1"></span>    <span class="c1">// 如果 不要发送结果到客户端 或 跳过该指令的回复 被设置，直接返回错误
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">CLIENT_REPLY_OFF</span><span class="o">|</span><span class="n">CLIENT_REPLY_SKIP</span><span class="p">))</span> <span class="k">return</span> <span class="n">C_ERR</span><span class="p">;</span>
+    <span class="c1">// 如果对于同步用的主节点客户端，不需要写入
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">((</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">CLIENT_MASTER</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+        <span class="c1">// 除非设置了强制写入
+</span><span class="c1"></span>        <span class="o">!</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">CLIENT_MASTER_FORCE_REPLY</span><span class="p">))</span> <span class="k">return</span> <span class="n">C_ERR</span><span class="p">;</span>
+
+    <span class="c1">// 对于AOF载入的客户端，不需要写入
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">conn</span><span class="p">)</span> <span class="k">return</span> <span class="n">C_ERR</span><span class="p">;</span> <span class="cm">/* Fake client for AOF loading. */</span>
+
+    <span class="c1">// 如果之前没有注册过写入handler，那么注册
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">clientHasPendingReplies</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="n">clientInstallWriteHandler</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+
+    <span class="c1">// 一切ok 等待写入
+</span><span class="c1"></span>    <span class="k">return</span> <span class="n">C_OK</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>下述的三个更高级别的函数利用上述的两个基础函数完成写入：</p>
+<ul>
+<li><code>addReply(client *c, robj *obj)</code> 将字符串对象<code>obj</code>(字符串和数字)尝试写入<code>buffer</code>，如果失败，则尝试写入<code>reply</code>链表。</li>
+<li><code>addReplySds(client *c, sds s)</code> 将<code>s</code>写入回复，并释放。</li>
+<li><code>addReplyProto(client *c, const char *s, size_t len)</code> 相较于其他的方法更加的高效。</li>
+</ul>
+<p>其他的方法均基于上述的三个方法实现，业务使用这些包装方法来实现业务。
+这些包装的方法与协议息息相关，我认为可以看作是协议返回相关的具体实现。</p>
+<p>选择一个方法作为例子，简单介绍下：</p>
+<p><code>addReplyBulk</code>写入bulk类型的数据</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">addReplyBulk</span><span class="p">(</span><span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">,</span> <span class="n">robj</span> <span class="o">*</span><span class="n">obj</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">addReplyBulkLen</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">obj</span><span class="p">);</span> <span class="c1">// 会先写入协议中要求的$字符和长度
+</span><span class="c1"></span>  <span class="n">addReply</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">obj</span><span class="p">);</span> <span class="c1">// 写入结果
+</span><span class="c1"></span>  <span class="n">addReply</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">shared</span><span class="p">.</span><span class="n">crlf</span><span class="p">);</span> <span class="c1">// 写入结尾的CRLF
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="操作数据库的键值对">操作数据库的键值对</h1>
+<h2 id="设置key">设置key</h2>
+<p>首先看下高级别的接口。</p>
+<p><code>src/db.c#244</code>的<code>genericSetKey</code>方法提供了在db中设置键值对的功能。</p>
+<ol>
+<li>首先通过<code>lookupKeyWrite</code>判断对应的键是否存在，来决定采用<code>dbAdd</code>还是<code>dbOverwrite</code>来操作。</li>
+<li>调用<code>incrRefCount</code>来增加引用数量。</li>
+<li>除非特别设置，否则使用<code>removeExpire</code>移除过期时间。</li>
+<li>通过<code>signalModifedKey</code>来通知<code>WATCH</code>的等待者。</li>
+</ol>
+<h1 id="过期时间的实现">过期时间的实现</h1>
+<p>过期相关的核心接口都在<code>src/db.c#1173</code>处开始。</p>
+<p>redis通过将有过期时间的键作为键、将过期时间的绝对时间戳作为值写到另一个字典<code>db.expires</code>中。</p>
+<p>对过期时间的增删改查由<code>setExpire</code>/<code>removeExpire</code>/<code>setExpire</code>/<code>getExpire</code>实现，
+其中的逻辑比较清晰和简单，就此略过。</p>
+<p>系统还提供了检查键是否过期的<code>keyIsExpired</code>和用来检查并处理已经过期的键的<code>expireIfNeeded</code>。</p>
+<p>对于过期的键的剔除有两种途径：被动删除与主动删除。</p>
+<p>对于主动删除，redis会每秒十次的尝试清理过期键。
+通过后台的定时循环调用<code>activeExpireCycle</code>实现。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">activeExpireCycle</span><span class="p">(</span><span class="kt">int</span> <span class="n">type</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// ...
+</span><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">dbs_per_call</span> <span class="o">&amp;&amp;</span> <span class="n">timelimit_exit</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 迭代适当数量的数据库
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span>    <span class="n">redisDb</span> <span class="o">*</span><span class="n">db</span> <span class="o">=</span> <span class="n">server</span><span class="p">.</span><span class="n">db</span><span class="o">+</span><span class="p">(</span><span class="n">current_db</span> <span class="o">%</span> <span class="n">server</span><span class="p">.</span><span class="n">dbnum</span><span class="p">);</span> <span class="c1">// 选择出要执行的数据库
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span>
+    <span class="c1">// 如果每次循环检查，有超过一定比例的键过期，那么就再次查找
+</span><span class="c1"></span>    <span class="k">do</span> <span class="p">{</span>
+      <span class="c1">// 如果没有设置了过期事件的键、hash表过于稀疏，停止检查
+</span><span class="c1"></span>      <span class="c1">// ...
+</span><span class="c1"></span>      <span class="c1">// 开始抽样检查
+</span><span class="c1"></span>      <span class="c1">// ...
+</span><span class="c1"></span>      <span class="k">while</span> <span class="p">(</span><span class="n">sampled</span> <span class="o">&lt;</span> <span class="n">num</span> <span class="o">&amp;&amp;</span> <span class="n">checked_buckets</span> <span class="o">&lt;</span> <span class="n">max_buckets</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>                  <span class="c1">// 检查是否过期并处理
+</span><span class="c1"></span>                  <span class="n">ttl</span> <span class="o">=</span> <span class="n">dictGetSignedIntegerVal</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">-</span><span class="n">now</span><span class="p">;</span>
+                  <span class="k">if</span> <span class="p">(</span><span class="n">activeExpireCycleTryExpire</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">now</span><span class="p">))</span> <span class="n">expired</span><span class="o">++</span><span class="p">;</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>      <span class="p">}</span>
+      <span class="c1">// ...
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">((</span><span class="n">iteration</span> <span class="o">&amp;</span> <span class="mh">0xf</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* check once every 16 iterations. */</span>
+        <span class="c1">// 如果消耗过长时间就放弃
+</span><span class="c1"></span>        <span class="c1">// ...
+</span><span class="c1"></span>      <span class="p">}</span>
+    <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">sampled</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="cm">/* 如果每次循环检查，有超过一定比例的键过期，那么就再次查找 */</span>
+             <span class="p">(</span><span class="n">expired</span><span class="o">*</span><span class="mi">100</span><span class="o">/</span><span class="n">sampled</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">config_cycle_acceptable_stale</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>被动删除通过<code>expireIfNeeded</code>通常在键被访问的地方调用来实现。
+函数中首先判断是否过期，
+如果过期了，对于从实例，会直接返回结果；
+对于主实例，会：</p>
+<ol>
+<li>更新统计数据</li>
+<li>调用<code>propagateExpire</code>将变化传递给AOF和从实例</li>
+<li>调用<code>notifyKeyspaceEvent</code>将过期事件进行广播</li>
+<li>根据配置<code>lazyfree_lazy_expire</code>，会尝试异步(<code>dbAsyncDelete</code>)或同步(<code>dbSyncDelete</code>)的将这个key移除
+<ul>
+<li>同步删除通过调用哈希表的<code>dictDelete</code>接口分别删除过期map(<code>db.expires</code>)和主map中的key，对于集群模式，还会调用<code>slotToKeyDel</code>来移除key和slot的关系</li>
+<li>异步删除整个流程类似与同步的删除，只是在判断大小如果足够大的时候，会异步<strong>释放</strong>，而不是同步<strong>释放</strong>。</li>
+</ul>
+</li>
+<li>调用<code>signalModifiedKey</code>触发相关的钩子</li>
+</ol>
+<p>对于过期的键值对的处理同时需要应用在AOF和从实例上，这个功能由<code>propagateExpire</code>来实现。
+两者的操作相似，通过生成一个<code>DEL</code>或<code>UNLINK</code>命令来实现标记对应的键为过期的目的。</p>
+<h1 id="阻塞指令的实现">阻塞指令的实现</h1>
+<p>比如<code>BLPOP</code>这种指令，在没有数据的情况下，会阻塞直到有数据可以返回。</p>
+<p>具体的实现上，区分了有无数据的情况：</p>
+<ul>
+<li>对于有数据的情况，会转而执行指令的非阻塞版本，返回结果。</li>
+<li>队伍无数据的情况，会将客户端放到<code>db.blocking_keys</code>要等待的键的链表上。
+随后会等待插入的指令来唤醒阻塞的客户端。</li>
+</ul>
+<p>简单看下阻塞的实现：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">blockForKeys</span><span class="p">(</span><span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">,</span> <span class="kt">int</span> <span class="n">btype</span><span class="p">,</span> <span class="n">robj</span> <span class="o">**</span><span class="n">keys</span><span class="p">,</span> <span class="kt">int</span> <span class="n">numkeys</span><span class="p">,</span> <span class="n">mstime_t</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">robj</span> <span class="o">*</span><span class="n">target</span><span class="p">,</span> <span class="n">streamID</span> <span class="o">*</span><span class="n">ids</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">dictEntry</span> <span class="o">*</span><span class="n">de</span><span class="p">;</span>
+  <span class="n">list</span> <span class="o">*</span><span class="n">l</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">j</span><span class="p">;</span>
+
+  <span class="n">c</span><span class="o">-&gt;</span><span class="n">bpop</span><span class="p">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span><span class="p">;</span> <span class="c1">// 要等待到该时间戳
+</span><span class="c1"></span>  <span class="n">c</span><span class="o">-&gt;</span><span class="n">bpop</span><span class="p">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="p">;</span> <span class="c1">// 需要接收到数据的键
+</span><span class="c1"></span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">target</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="n">incrRefCount</span><span class="p">(</span><span class="n">target</span><span class="p">);</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">numkeys</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 依次遍历要等待的key
+</span><span class="c1"></span>    <span class="n">bkinfo</span> <span class="o">*</span><span class="n">bki</span> <span class="o">=</span> <span class="n">zmalloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">bki</span><span class="p">));</span> <span class="c1">// 构建一个阻塞信息节点对象
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">btype</span> <span class="o">==</span> <span class="n">BLOCKED_STREAM</span><span class="p">)</span>
+      <span class="n">bki</span><span class="o">-&gt;</span><span class="n">stream_id</span> <span class="o">=</span> <span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">];</span> <span class="c1">// 对于阻塞在流上，记录id
+</span><span class="c1"></span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dictAdd</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">bpop</span><span class="p">.</span><span class="n">keys</span><span class="p">,</span><span class="n">keys</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">bki</span><span class="p">)</span> <span class="o">!=</span> <span class="n">DICT_OK</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">zfree</span><span class="p">(</span><span class="n">bki</span><span class="p">);</span>
+      <span class="k">continue</span><span class="p">;</span> <span class="c1">// 如果目标key已经存在，忽略
+</span><span class="c1"></span>    <span class="p">}</span>
+    <span class="n">incrRefCount</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span>
+
+    <span class="n">de</span> <span class="o">=</span> <span class="n">dictFind</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">db</span><span class="o">-&gt;</span><span class="n">blocking_keys</span><span class="p">,</span><span class="n">keys</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span> <span class="c1">// 查找要等待的key的等待列表
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">de</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 如果不存在，那么新建一个列表
+</span><span class="c1"></span>      <span class="kt">int</span> <span class="n">retval</span><span class="p">;</span>
+
+      <span class="n">l</span> <span class="o">=</span> <span class="n">listCreate</span><span class="p">();</span>
+      <span class="n">retval</span> <span class="o">=</span> <span class="n">dictAdd</span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">db</span><span class="o">-&gt;</span><span class="n">blocking_keys</span><span class="p">,</span><span class="n">keys</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">l</span><span class="p">);</span>
+      <span class="n">incrRefCount</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">j</span><span class="p">]);</span>
+      <span class="n">serverAssertWithInfo</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">keys</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">retval</span> <span class="o">==</span> <span class="n">DICT_OK</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">l</span> <span class="o">=</span> <span class="n">dictGetVal</span><span class="p">(</span><span class="n">de</span><span class="p">);</span> <span class="c1">// 如果存在，直接获取对应的列表
+</span><span class="c1"></span>    <span class="p">}</span>
+    <span class="n">listAddNodeTail</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">c</span><span class="p">);</span> <span class="c1">// 将等待信息追加到尾部
+</span><span class="c1"></span>    <span class="n">bki</span><span class="o">-&gt;</span><span class="n">listnode</span> <span class="o">=</span> <span class="n">listLast</span><span class="p">(</span><span class="n">l</span><span class="p">);</span> <span class="c1">// 在阻塞信息记录放置的节点
+</span><span class="c1"></span>  <span class="p">}</span>
+  <span class="n">blockClient</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">btype</span><span class="p">);</span> <span class="c1">// 主要是设置了客户端的阻塞标志，
+</span><span class="c1"></span>                        <span class="c1">// 并加入到超时检查表中server.clients_timeout_table
+</span><span class="c1"></span>                        <span class="c1">// 其实现是一个基数树 radix tree，能够快速的查找到长整数
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>随后阻塞会被<code>handleClientsBlockedOnKeys</code>唤醒。
+这个函数在两个场景会被调用：</p>
+<ul>
+<li>每个指令执行结束且有处于就绪状态的键</li>
+<li>每个主循环的<code>beforeSleep</code>方法会执行一次</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">handleClientsBlockedOnKeys</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">while</span><span class="p">(</span><span class="n">listLength</span><span class="p">(</span><span class="n">server</span><span class="p">.</span><span class="n">ready_keys</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>        <span class="c1">// 存下就绪的key
+</span><span class="c1"></span>        <span class="n">l</span> <span class="o">=</span> <span class="n">server</span><span class="p">.</span><span class="n">ready_keys</span><span class="p">;</span>
+        <span class="n">server</span><span class="p">.</span><span class="n">ready_keys</span> <span class="o">=</span> <span class="n">listCreate</span><span class="p">();</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>
+        <span class="k">while</span><span class="p">(</span><span class="n">listLength</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 遍历每个就绪的键
+</span><span class="c1"></span>            <span class="n">listNode</span> <span class="o">*</span><span class="n">ln</span> <span class="o">=</span> <span class="n">listFirst</span><span class="p">(</span><span class="n">l</span><span class="p">);</span>
+            <span class="n">readyList</span> <span class="o">*</span><span class="n">rl</span> <span class="o">=</span> <span class="n">ln</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">;</span>
+
+            <span class="n">dictDelete</span><span class="p">(</span><span class="n">rl</span><span class="o">-&gt;</span><span class="n">db</span><span class="o">-&gt;</span><span class="n">ready_keys</span><span class="p">,</span><span class="n">rl</span><span class="o">-&gt;</span><span class="n">key</span><span class="p">);</span> <span class="c1">// 移除每个db中的就绪key
+</span><span class="c1"></span>
+            <span class="n">robj</span> <span class="o">*</span><span class="n">o</span> <span class="o">=</span> <span class="n">lookupKeyWrite</span><span class="p">(</span><span class="n">rl</span><span class="o">-&gt;</span><span class="n">db</span><span class="p">,</span><span class="n">rl</span><span class="o">-&gt;</span><span class="n">key</span><span class="p">);</span> <span class="c1">// 获取数据
+</span><span class="c1"></span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">o</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// 根据类型唤醒对应的阻塞的客户端
+</span><span class="c1"></span>                <span class="c1">// 方法内部按照FIFO唤醒阻塞的客户端
+</span><span class="c1"></span>                <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_LIST</span><span class="p">)</span>
+                    <span class="n">serveClientsBlockedOnListKey</span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="n">rl</span><span class="p">);</span>
+                <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_ZSET</span><span class="p">)</span>
+                    <span class="n">serveClientsBlockedOnSortedSetKey</span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="n">rl</span><span class="p">);</span>
+                <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_STREAM</span><span class="p">)</span>
+                    <span class="n">serveClientsBlockedOnStreamKey</span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="n">rl</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="c1">// ...
+</span><span class="c1"></span>        <span class="p">}</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>最后简单介绍下超时的实现。
+redis会在每次<code>beforeSleep</code>中调用<code>handleBlockedClientsTimeout</code>来处理阻塞超时的客户端。
+其核心是利用<code>server.clients_timeout_table</code>的迭代器，遍历等待客户端，
+直到当前时间戳为止。</p>
+<h1 id="scan相关的实现">scan相关的实现</h1>
+<p><code>SCAN</code>,<code>HSCAN</code>,<code>SSCAN</code>和<code>ZSCAN</code>四个scan命令最终都由<code>scanGenericCommand</code>实现。</p>
+<p>实现中，对于数据量可控的情况，采取了直接返回全部数据的方式，降低了复杂度，提高了性能。
+数据量大的情况均为hash表承载，由hash表的接口<code>dictScan</code>实现功能。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// o 是要扫描的哈希表/集合/有序集合
+</span><span class="c1"></span><span class="kt">void</span> <span class="nf">scanGenericCommand</span><span class="p">(</span><span class="n">client</span> <span class="o">*</span><span class="n">c</span><span class="p">,</span> <span class="n">robj</span> <span class="o">*</span><span class="n">o</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">cursor</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...
+</span><span class="c1"></span>
+    <span class="c1">// 首先解析了参数，分别存到count/pat,use_pattern/type中
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span>
+    <span class="c1">// 检查是否是hash表作为存储底层，如果是将ht指向对应的hash表。
+</span><span class="c1"></span>    <span class="n">ht</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">o</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 如果传入的o为空，那么选择整个数据库
+</span><span class="c1"></span>        <span class="n">ht</span> <span class="o">=</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">db</span><span class="o">-&gt;</span><span class="n">dict</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_SET</span> <span class="o">&amp;&amp;</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">encoding</span> <span class="o">==</span> <span class="n">OBJ_ENCODING_HT</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 由hash表表示的set
+</span><span class="c1"></span>        <span class="n">ht</span> <span class="o">=</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_HASH</span> <span class="o">&amp;&amp;</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">encoding</span> <span class="o">==</span> <span class="n">OBJ_ENCODING_HT</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 由hash表表示的哈希表
+</span><span class="c1"></span>        <span class="n">ht</span> <span class="o">=</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">;</span>
+        <span class="n">count</span> <span class="o">*=</span> <span class="mi">2</span><span class="p">;</span> <span class="cm">/* We return key / value for this type. */</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_ZSET</span> <span class="o">&amp;&amp;</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">encoding</span> <span class="o">==</span> <span class="n">OBJ_ENCODING_SKIPLIST</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 由hash表表示的zset
+</span><span class="c1"></span>        <span class="n">zset</span> <span class="o">*</span><span class="n">zs</span> <span class="o">=</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">;</span>
+        <span class="n">ht</span> <span class="o">=</span> <span class="n">zs</span><span class="o">-&gt;</span><span class="n">dict</span><span class="p">;</span>
+        <span class="n">count</span> <span class="o">*=</span> <span class="mi">2</span><span class="p">;</span> <span class="cm">/* We return key / value for this type. */</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ht</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ...
+</span><span class="c1"></span>        <span class="kt">long</span> <span class="n">maxiterations</span> <span class="o">=</span> <span class="n">count</span><span class="o">*</span><span class="mi">10</span><span class="p">;</span> <span class="c1">// 设置迭代次数的上限，避免过长时间阻塞
+</span><span class="c1"></span>        <span class="k">do</span> <span class="p">{</span>
+            <span class="c1">// 依赖hash表的接口来扫描
+</span><span class="c1"></span>            <span class="n">cursor</span> <span class="o">=</span> <span class="n">dictScan</span><span class="p">(</span><span class="n">ht</span><span class="p">,</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">scanCallback</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">privdata</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">cursor</span> <span class="o">&amp;&amp;</span>
+              <span class="n">maxiterations</span><span class="o">--</span> <span class="o">&amp;&amp;</span>
+              <span class="n">listLength</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">count</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_SET</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="kt">int64_t</span> <span class="n">ll</span><span class="p">;</span>
+
+        <span class="c1">// 非hash表的实现数据量比较小
+</span><span class="c1"></span>        <span class="c1">// 遍历全部，全部取出是可控的
+</span><span class="c1"></span>        <span class="k">while</span><span class="p">(</span><span class="n">intsetGet</span><span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span><span class="n">pos</span><span class="o">++</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ll</span><span class="p">))</span> 
+            <span class="n">listAddNodeTail</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="n">createStringObjectFromLongLong</span><span class="p">(</span><span class="n">ll</span><span class="p">));</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_HASH</span> <span class="o">||</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_ZSET</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="n">ziplistIndex</span><span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+        <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">vstr</span><span class="p">;</span>
+        <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">vlen</span><span class="p">;</span>
+        <span class="kt">long</span> <span class="kt">long</span> <span class="n">vll</span><span class="p">;</span>
+
+        <span class="c1">// 非hash表的实现数据量比较小
+</span><span class="c1"></span>        <span class="c1">// 遍历全部，全部取出是可控的
+</span><span class="c1"></span>        <span class="k">while</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">ziplistGet</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="o">&amp;</span><span class="n">vstr</span><span class="p">,</span><span class="o">&amp;</span><span class="n">vlen</span><span class="p">,</span><span class="o">&amp;</span><span class="n">vll</span><span class="p">);</span>
+            <span class="n">listAddNodeTail</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">vstr</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="o">?</span> <span class="n">createStringObject</span><span class="p">((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">vstr</span><span class="p">,</span><span class="n">vlen</span><span class="p">)</span> <span class="o">:</span>
+                                 <span class="n">createStringObjectFromLongLong</span><span class="p">(</span><span class="n">vll</span><span class="p">));</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">ziplistNext</span><span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">ptr</span><span class="p">,</span><span class="n">p</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">serverPanic</span><span class="p">(</span><span class="s">&#34;Not handled encoding in SCAN.&#34;</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="n">node</span> <span class="o">=</span> <span class="n">listFirst</span><span class="p">(</span><span class="n">keys</span><span class="p">);</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">robj</span> <span class="o">*</span><span class="n">kobj</span> <span class="o">=</span> <span class="n">listNodeValue</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
+        <span class="n">nextnode</span> <span class="o">=</span> <span class="n">listNextNode</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
+        <span class="kt">int</span> <span class="n">filter</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="c1">// 过滤pattern规定的格式 
+</span><span class="c1"></span>        <span class="c1">// 过滤type
+</span><span class="c1"></span>        <span class="c1">// 过滤过期键
+</span><span class="c1"></span>        <span class="c1">// 具体实现不是重点
+</span><span class="c1"></span>        <span class="c1">// ...
+</span><span class="c1"></span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">decrRefCount</span><span class="p">(</span><span class="n">kobj</span><span class="p">);</span>
+            <span class="c1">// 如果不符合预期，那么从答案列表中移除
+</span><span class="c1"></span>            <span class="n">listDelNode</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">node</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">o</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_ZSET</span> <span class="o">||</span> <span class="n">o</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">OBJ_HASH</span><span class="p">))</span> <span class="p">{</span>
+            <span class="c1">// 对于要返回键值对的情况，那么值也要清除
+</span><span class="c1"></span>            <span class="n">node</span> <span class="o">=</span> <span class="n">nextnode</span><span class="p">;</span>
+            <span class="n">nextnode</span> <span class="o">=</span> <span class="n">listNextNode</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">kobj</span> <span class="o">=</span> <span class="n">listNodeValue</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
+                <span class="n">decrRefCount</span><span class="p">(</span><span class="n">kobj</span><span class="p">);</span>
+                <span class="n">listDelNode</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">node</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">nextnode</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 返回结果
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span>    <span class="n">addReplyBulkLongLong</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">cursor</span><span class="p">);</span> <span class="c1">// 新的游标
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span>    <span class="k">while</span> <span class="p">((</span><span class="n">node</span> <span class="o">=</span> <span class="n">listFirst</span><span class="p">(</span><span class="n">keys</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 返回结果
+</span><span class="c1"></span>        <span class="c1">// ...
+</span><span class="c1"></span>    <span class="p">}</span>
+
+<span class="nl">cleanup</span><span class="p">:</span>
+    <span class="c1">// 清理资源
+</span><span class="c1"></span>    <span class="c1">// ...
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id="参考">参考</h1>
+<ul>
+<li><a href="https://redis.io/commands/expire#how-redis-expires-keys">how-redis-expires-keys</a></li>
+<li><a href="https://redis.io/topics/protocol">redis protocol</a></li>
+</ul>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-11
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/redis/">redis</a>
+          <a href="/tags/what/">what</a>
+          <a href="/tags/how-redis-work/">how-redis-work</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/how_redis_work_bitmap/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">位图的基本实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/how_redis_work_string/">
+            <span class="next-text nav-default">redis指令的实现-字符串</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-11 20:21:00 \u002b0800 \u002b0800',
+        title: 'redis指令的实现-基础接口',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

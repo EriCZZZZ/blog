@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>学习Websocket - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="之前没有机会用到websocket，也没有认真的了解过， 新的工作里看起来经常会用到，所以简单的了解一下协议的一些细节，以及一些实践。 webs" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/http/websocket/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="学习Websocket" />
+<meta property="og:description" content="之前没有机会用到websocket，也没有认真的了解过， 新的工作里看起来经常会用到，所以简单的了解一下协议的一些细节，以及一些实践。 webs" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/http/websocket/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-11-30T23:05:21&#43;08:00" />
+<meta property="article:modified_time" content="2020-11-30T23:05:21&#43;08:00" />
+
+<meta itemprop="name" content="学习Websocket">
+<meta itemprop="description" content="之前没有机会用到websocket，也没有认真的了解过， 新的工作里看起来经常会用到，所以简单的了解一下协议的一些细节，以及一些实践。 webs"><meta itemprop="datePublished" content="2020-11-30T23:05:21&#43;08:00" />
+<meta itemprop="dateModified" content="2020-11-30T23:05:21&#43;08:00" />
+<meta itemprop="wordCount" content="2752">
+<meta itemprop="keywords" content="what,why,HTTP,HTTPS," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="学习Websocket"/>
+<meta name="twitter:description" content="之前没有机会用到websocket，也没有认真的了解过， 新的工作里看起来经常会用到，所以简单的了解一下协议的一些细节，以及一些实践。 webs"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">学习Websocket</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-11-30 </span>
+        
+          <span class="more-meta"> 约 2752 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#websocket是什么">websocket是什么</a></li>
+    <li><a href="#websocket是如何运作的呢">websocket是如何运作的呢？</a>
+      <ul>
+        <li><a href="#总览">总览</a></li>
+        <li><a href="#握手">握手</a></li>
+        <li><a href="#传输数据">传输数据</a>
+          <ul>
+            <li><a href="#mask">Mask</a></li>
+            <li><a href="#opcode">Opcode</a></li>
+            <li><a href="#发送数据">发送数据</a></li>
+            <li><a href="#接受数据">接受数据</a></li>
+          </ul>
+        </li>
+        <li><a href="#断开链接">断开链接</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>之前没有机会用到websocket，也没有认真的了解过，
+新的工作里看起来经常会用到，所以简单的了解一下协议的一些细节，以及一些实践。</p>
+<h1 id="websocket是什么">websocket是什么</h1>
+<p>首先给出一个简单的结论：websocket是一个由HTTP启动、基于TCP、支持全双工通信的以帧为传输单位的通信协议。</p>
+<p>HTTP/2及之前的协议，都没有提供服务端与客户端双向通信的支持。
+当然可以通过SSE(Server-Sent Events 服务器推送事件)来完成从服务端到客户端的推送
+和正常的HTTP请求完成从客户端到服务端的传输来实现双向通信的需求，
+但这实在看起来有点奇怪。
+为了解决双向通信的需求，增加了websocket这个协议。</p>
+<h1 id="websocket是如何运作的呢">websocket是如何运作的呢？</h1>
+<p>初代websocket是基于HTTP/1实现的，那么我们先从最一开始的版本开始。</p>
+<h2 id="总览">总览</h2>
+<p>websocket协议有两个阶段：</p>
+<ol>
+<li>握手</li>
+<li>传输数据</li>
+</ol>
+<p>因为websocket中有链接的概念，
+那么建立一个链接自然需要通过握手来使双方维护好链接。
+出于兼容性的考虑，
+websocket的握手的过程基于HTTP/1.1实现。</p>
+<p>首先，客户端向服务端发送一个握手请求：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-http" data-lang="http"><span class="nf">GET</span> <span class="nn">/chat</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="n">Host</span><span class="o">:</span> <span class="l">server.example.com</span>
+<span class="n">Upgrade</span><span class="o">:</span> <span class="l">websocket</span>
+<span class="n">Connection</span><span class="o">:</span> <span class="l">Upgrade</span>
+<span class="n">Sec-WebSocket-Key</span><span class="o">:</span> <span class="l">dGhlIHNhbXBsZSBub25jZQ==</span>
+<span class="n">Origin</span><span class="o">:</span> <span class="l">http://example.com</span>
+<span class="n">Sec-WebSocket-Protocol</span><span class="o">:</span> <span class="l">chat, superchat</span>
+<span class="n">Sec-WebSocket-Version</span><span class="o">:</span> <span class="l">13</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>当服务器接收到握手请求时，做出回应：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-http" data-lang="http"><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">101</span> <span class="ne">Switching Protocols</span>
+<span class="n">Upgrade</span><span class="o">:</span> <span class="l">websocket</span>
+<span class="n">Connection</span><span class="o">:</span> <span class="l">Upgrade</span>
+<span class="n">Sec-WebSocket-Accept</span><span class="o">:</span> <span class="l">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span>
+<span class="n">Sec-WebSocket-Protocol</span><span class="o">:</span> <span class="l">chat</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>经过一来一回，链接便建立成功，进入下个阶段：传输数据。</p>
+<p>数据在链接中的传输单位是<code>message</code>，每个消息是若干同类型<code>frame</code>的组合。</p>
+<p><code>frame</code>是传输的数据的最小单元，根据存储数据的内容，被划分为若干类型。</p>
+<h2 id="握手">握手</h2>
+<p>websocket用<code>ws</code>或<code>wss</code>作为协议的标记，<code>wss</code>表示基于tls加密的websocket。</p>
+<p>客户端发起握手请求，如果不指定端口，则复用HTTP或HTTPS的默认端口。</p>
+<p>握手请求具体为：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-http" data-lang="http"><span class="nf">GET</span> <span class="nn">/chat</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="n">Host</span><span class="o">:</span> <span class="l">server.example.com</span>
+<span class="n">Upgrade</span><span class="o">:</span> <span class="l">websocket</span>
+<span class="n">Connection</span><span class="o">:</span> <span class="l">Upgrade</span>
+<span class="n">Sec-WebSocket-Key</span><span class="o">:</span> <span class="l">dGhlIHNhbXBsZSBub25jZQ==</span>
+<span class="n">Origin</span><span class="o">:</span> <span class="l">http://example.com</span>
+<span class="n">Sec-WebSocket-Protocol</span><span class="o">:</span> <span class="l">chat, superchat</span>
+<span class="n">Sec-WebSocket-Version</span><span class="o">:</span> <span class="l">13</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>首先要关注的是请求中的<code>Connection: Upgrade</code>和<code>Update:websocket</code>，
+这是在利用HTTP/1.1的协议协商机制（HTTP/2也是利用该协议来探测服务器是否支持HTTP/2）来尝试使用websocket协议。</p>
+<p>除此之外，还有三个header用于websocket的配置：</p>
+<ul>
+<li><code>Sec-WebSocket-Key</code> 用于区分websocket链接</li>
+<li><code>Sec-WebSocket-Protocol</code> 客户端支持的子协议</li>
+<li><code>Sec-WebSocket-Version</code> 必须为13</li>
+<li><code>Sec-WebSocket-Extensions</code>表明客户端支持的websocket的扩展类型</li>
+</ul>
+<p>接下来是服务器端的工作。
+在接收到客户端发来的握手请求后，
+需要返回相应的结果，来完成协议的升级。
+这部分工作分为两部分：</p>
+<ol>
+<li>协议协商机制的完成</li>
+<li>websocket协议的完成</li>
+</ol>
+<p>下面先看下对应的返回内容：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-http" data-lang="http"><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">101</span> <span class="ne">Switching Protocols</span>
+<span class="n">Upgrade</span><span class="o">:</span> <span class="l">websocket</span>
+<span class="n">Connection</span><span class="o">:</span> <span class="l">Upgrade</span>
+<span class="n">Sec-WebSocket-Accept</span><span class="o">:</span> <span class="l">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span>
+<span class="n">Sec-WebSocket-Protocol</span><span class="o">:</span> <span class="l">chat</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>首先是状态码、<code>Upgrade</code>和<code>Connection</code>三者完成了协议升级。</p>
+<p>然后是websocket协议的完成：</p>
+<ul>
+<li><code>Sec-WebSocket-Protocol</code>表示服务器选定的子协议</li>
+<li><code>Sec-WebSocket-Accept</code>用于区分websocket链接</li>
+</ul>
+<p>特别的，<code>Sec-WebSocket-Key</code>和<code>Sec-WebSocket-Accept</code>结合起来用于确认服务端支持了websocket协议且服务端确实接受了链接。
+两者的计算方式如下：</p>
+<ol>
+<li>客户端发起链接的时候，随机产生一个16字节的字符串<code>nonce</code>。</li>
+<li>将<code>Sec-WebSocket-Key</code>设置为base64(nonce)`，发送请求。</li>
+<li>服务端接收到<code>Sec-WebSocket-Key</code>，将其与一个固定的UUID(258EAFA5-E914-47DA-95CA-C5AB0DC85B11)拼接，随后进行sha1运算，然后进行base64计算。</li>
+<li>将<code>Sec-WebSocket-Accept</code>设置为上一步计算的值，返回给客户端。</li>
+</ol>
+<p>客户端收到后会校验该值，如果不一致，表明服务器不支持websocket协议或链接错乱。</p>
+<p>至此，websocket握手完成。</p>
+<h2 id="传输数据">传输数据</h2>
+<p>按前述，websocket协议用一系列帧来传输数据。</p>
+<p>选择帧的形式来传输，
+首要的目的就是为了能够在不缓存数据的情况下，
+可以先发送出部分有相应的长度和数据。
+其次，能够多路复用一个链接。</p>
+<p>首先看下帧的格式：</p>
+<pre><code class="language-ditaa" data-lang="ditaa">@startuml
+skinparam defaultFontName Microsoft YaHei
+ditaa(-E --no-shadows -e utf8)
++--+-+-+-+-------+-+-------------+------------------------------+
+|F |R|R|R| opcode|M| Payload len |   Extended payload length    |
+|I |S|S|S|  (4)  |A|     (7)     |            (16/64)           |
+|N |V|V|V|       |S|             |  (if payload len==126/127)   |
+|  |1|2|3|       |K|             |                              |
++--+-+-+-+-------+-+-------------+- - - - - - - - - - - - - - - +
+|     Extended payload length continued, if payload len eq 127  |
++ - - - - - - - - - - - - - - - +-------------------------------+
+|                               |Masking key, if MASK set to 1  |
++-------------------------------+-------------------------------+
+| Masking key (continued)       |                               |
++-------------------------------+                                
+|                                                               |
+                                                                 
+|                     Payload Data (Extension data)             |
+                                                                 
+|                                                               |
++ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+|                                                               |
+                                                                 
+|                     Payload Data (Application data)           |
+                                                                 
+|                                                               |
++---------------------------------------------------------------+
+@enduml
+</code></pre><ul>
+<li>FIN 标记是否是一个<code>message</code>的最后一个帧。</li>
+<li>RSV1/RSV2/RSV3 用于协商好的扩展使用</li>
+<li>Opcode 表明帧存储的数据是什么类型的
+<ul>
+<li>0x0 continuation frame?</li>
+<li>0x1 文本帧</li>
+<li>0x2 二进制帧</li>
+<li>0x8 关闭链接</li>
+<li>0x9 ping</li>
+<li>0xA pong</li>
+</ul>
+</li>
+<li>Mask 用于标记载荷是否经过mask</li>
+<li>Payload len 用于标记载荷的长度
+<ul>
+<li>长度小于126时，使用7bit</li>
+<li>长度大于126时
+<ul>
+<li>设置原有的7bit为126，表明使用后续的32位表示长度</li>
+<li>设置为127，表明用后续的64位表示长度</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Masking key 用于进行mask的key，如果有，那么占用4字节</li>
+<li>Payload Data 载荷数据
+<ul>
+<li>Extension data 协商好的扩展使用的数据</li>
+<li>Application data 数据</li>
+</ul>
+</li>
+</ul>
+<p>格式中不太直观的有两个点，一个是mask，另一个是Opcode。</p>
+<h3 id="mask">Mask</h3>
+<p>为了避免攻击者通过伪造websocket的帧来攻击如代理等的互联网基础设施，
+协议增加了mask机制，
+可以参考<a href="https://tools.ietf.org/html/rfc6455#section-10.3">这里</a>。</p>
+<p>mask机制要求客户端发送给服务器的请求的数据，
+使用每次都随机且以难以预测的方式生成的Masking key进行按特定算法进行转换。
+服务器在接受到这些数据后会相应的转换，获得数据。</p>
+<h3 id="opcode">Opcode</h3>
+<p>Opcode表示了帧的类型。</p>
+<h4 id="控制帧">控制帧</h4>
+<p>控制帧用来交流websocket的状态。</p>
+<p>目前有三种控制帧：</p>
+<ul>
+<li>0x8 关闭链接
+<ul>
+<li>用来关闭websocket链接，载荷是关闭链接的原因</li>
+</ul>
+</li>
+<li>0x9 ping
+<ul>
+<li>当收到ping帧时，除了如关闭等特殊情况，一定要尽快向另一端返回pong帧</li>
+</ul>
+</li>
+<li>0xA pong
+<ul>
+<li>用于回应ping帧</li>
+</ul>
+</li>
+</ul>
+<h4 id="数据帧">数据帧</h4>
+<p>数据帧承载应用的数据。
+分为UTF-8编码的文本帧和二进制帧。</p>
+<h3 id="发送数据">发送数据</h3>
+<p>发送数据时，需要</p>
+<ol>
+<li>将数据按照正确的方式分割成若干帧</li>
+<li>设置好第一个帧的Opcode</li>
+<li>设置好最后一个帧的FIN标记</li>
+</ol>
+<h3 id="接受数据">接受数据</h3>
+<p>将接收到的数据按照协议中的帧的格式进行解析：</p>
+<ol>
+<li>如果是控制帧则执行相应的操作</li>
+<li>如果是数据帧，则继续接受直到最后一帧到达。</li>
+</ol>
+<h2 id="断开链接">断开链接</h2>
+<p>为了让通信的中间组件能更好的处理websocket的关闭，协议被设计为断开也需要进行协商。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+participant 关闭发起者 as u1
+participant 被动关闭 as u2
+
+== 开始关闭 ==
+u1 -&gt; u2: 含有关闭链接信息的控制帧
+== 两者都进入CLOSEING状态 ==
+u2 -&gt; u1: 含有关闭链接信息的控制帧
+u1 &lt;-&gt; u2: 开始关闭TCP链接，两边都有可能发起关闭
+...TCP关闭完成...
+== 关闭完成 CLOSED ==
+
+
+@enduml
+</code></pre><p>要断开链接的一端，发送一个控制帧，内容为状态码和关闭原因。
+当一端发送并接受到了关闭链接的控制帧后，意味着websocket链接断开，程序就应该开始关闭底层的TCP链接。</p>
+<h1 id="参考">参考</h1>
+<ul>
+<li><a href="https://tools.ietf.org/html/rfc6455">rfc6455</a></li>
+</ul>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-11-30
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/what/">what</a>
+          <a href="/tags/why/">why</a>
+          <a href="/tags/http/">HTTP</a>
+          <a href="/tags/https/">HTTPS</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/in_action/apollo_agent_refresh/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">[有趣事情的发生]携程apollo配置更新推送的实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/redis/how_redis_work_hash/">
+            <span class="next-text nav-default">哈希表的实现</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-11-30 23:05:21 \u002b0800 \u002b0800',
+        title: '学习Websocket',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

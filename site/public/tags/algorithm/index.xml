@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>algorithm on blog</title>
+    <link>https://blog.er1c.dev/tags/algorithm/</link>
+    <description>Recent content in algorithm on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 24 Nov 2020 14:34:03 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/algorithm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>redis中pqsort的简单分析</title>
+      <link>https://blog.er1c.dev/post/redis/redis_pqsort/</link>
+      <pubDate>Tue, 24 Nov 2020 14:34:03 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/redis_pqsort/</guid>
+      <description>pqsort提供从指定位置开始，排序指定长度的元素的功能。 主要使用在SORT指令上。 其基础思想是快排的分组。 主要的优化思想有如下几个： 在数量</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>how on blog</title>
+    <link>https://blog.er1c.dev/tags/how/</link>
+    <description>Recent content in how on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 16 Apr 2021 17:08:35 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/how/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>[吃太饱]diff3</title>
+      <link>https://blog.er1c.dev/post/eat_too_much/diff3/</link>
+      <pubDate>Fri, 16 Apr 2021 17:08:35 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/eat_too_much/diff3/</guid>
+      <description>&lt;p&gt;最近在尝试看一些理论的材料然后落地其中的设计。&lt;/p&gt;
+&lt;p&gt;这种事情属实费力（因为能力太差）还没有收益（已经有完美的落地方案了），
+所以打算开启一个新的系列——《吃太多》来记录学习经过。&lt;/p&gt;
+&lt;p&gt;通过这一篇可以了解到：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;diff3是什么&lt;/li&gt;
+&lt;li&gt;提供的保证和一些性质&lt;/li&gt;
+&lt;li&gt;一个简单的diff3实现&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+    <item>
+      <title>如何用脚本登录远程机器——expect用法</title>
+      <link>https://blog.er1c.dev/post/linux/expect/</link>
+      <pubDate>Tue, 16 Mar 2021 23:14:06 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/expect/</guid>
+      <description>&lt;p&gt;expect可以通过写命令来处理交互式的程序。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Redis Cluster练习</title>
+      <link>https://blog.er1c.dev/post/redis/cluster_use/</link>
+      <pubDate>Thu, 11 Mar 2021 11:09:02 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/cluster_use/</guid>
+      <description>&lt;p&gt;哇哦，终于可以学习、实践一下Redis Cluster了！&lt;/p&gt;
+&lt;p&gt;这一篇主要是简单的概念与集群搭建与简单操作。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis bio是什么与如何实现的</title>
+      <link>https://blog.er1c.dev/post/redis/bio/</link>
+      <pubDate>Tue, 09 Mar 2021 08:59:52 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/bio/</guid>
+      <description>&lt;p&gt;在看aof刷盘的代码时，
+发现异步刷盘是通过一个叫&lt;code&gt;bio&lt;/code&gt;的组件完成的。
+正好研究一下。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis AOF的实现</title>
+      <link>https://blog.er1c.dev/post/redis/aof/</link>
+      <pubDate>Tue, 02 Mar 2021 23:39:28 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/aof/</guid>
+      <description>&lt;p&gt;上一篇学习了RDB相关的实现，接下来就轮到AOF了。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>redis RDB的实现</title>
+      <link>https://blog.er1c.dev/post/redis/rdb/</link>
+      <pubDate>Sun, 07 Feb 2021 22:00:12 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/redis/rdb/</guid>
+      <description>&lt;p&gt;&lt;em&gt;基于redis 6.0版本&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;对于redis的两种持久化方法听说很久了，
+但一直没有认真的了解过，
+所以找机会来学习下。&lt;/p&gt;
+&lt;p&gt;rdb是Redis Database Backup的缩写。&lt;/p&gt;
+&lt;p&gt;Redis Database Backup File是用来保存快照式的redis的数据的文件。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>[有趣事情的发生]携程apollo配置更新推送的实现</title>
+      <link>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</link>
+      <pubDate>Thu, 21 Jan 2021 20:04:39 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/in_action/apollo_agent_refresh/</guid>
+      <description>&lt;p&gt;最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。&lt;/p&gt;
+&lt;p&gt;看过redis的实现之后感觉阅读源码变得容易了一些。&lt;/p&gt;
+&lt;p&gt;看了一些项目之后发现有些遗忘了，&lt;del&gt;在兄弟的鼓励下意识到&lt;/del&gt; 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。&lt;/p&gt;
+&lt;p&gt;这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;希望能够坚持下去。&lt;/em&gt;&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>如何从线上机器拉取数据</title>
+      <link>https://blog.er1c.dev/post/linux/nc_and_pv/</link>
+      <pubDate>Tue, 18 Aug 2020 22:34:28 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/linux/nc_and_pv/</guid>
+      <description>如何从线上机器拉取数据 最近遇到了一些线上问题，希望能够把线上抓到的信息拉到本地处理。 实现的方式有很多，比如利用python开启一个http s</description>
+    </item>
+    
+  </channel>
+</rss>

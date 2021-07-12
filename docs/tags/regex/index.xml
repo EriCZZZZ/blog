@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>regex on blog</title>
+    <link>https://blog.er1c.dev/tags/regex/</link>
+    <description>Recent content in regex on blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 21 Aug 2020 20:31:59 +0800</lastBuildDate><atom:link href="https://blog.er1c.dev/tags/regex/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>正则表达式速查</title>
+      <link>https://blog.er1c.dev/post/memo/regex/</link>
+      <pubDate>Fri, 21 Aug 2020 20:31:59 +0800</pubDate>
+      
+      <guid>https://blog.er1c.dev/post/memo/regex/</guid>
+      <description>基础 元字符 \b 匹配单词分割处 . 匹配非换行符所有字符 \w 匹配文字字符 \s 空白字符 \d 数字 ^ 开头 $ 结尾 转义 使用 \ 进行转义 重复 均指重复之前一个组或字符类或</description>
+    </item>
+    
+  </channel>
+</rss>

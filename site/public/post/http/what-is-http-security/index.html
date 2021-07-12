@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>HTTP的安全机制 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。 对HTTP又有了一些新的理解 并深深的自我怀疑我真的了解HTTP吗？ 。 HTTP的" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/http/what-is-http-security/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="HTTP的安全机制" />
+<meta property="og:description" content="最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。 对HTTP又有了一些新的理解 并深深的自我怀疑我真的了解HTTP吗？ 。 HTTP的" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/http/what-is-http-security/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-08-21T23:17:27&#43;08:00" />
+<meta property="article:modified_time" content="2020-08-21T23:17:27&#43;08:00" />
+
+<meta itemprop="name" content="HTTP的安全机制">
+<meta itemprop="description" content="最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。 对HTTP又有了一些新的理解 并深深的自我怀疑我真的了解HTTP吗？ 。 HTTP的"><meta itemprop="datePublished" content="2020-08-21T23:17:27&#43;08:00" />
+<meta itemprop="dateModified" content="2020-08-21T23:17:27&#43;08:00" />
+<meta itemprop="wordCount" content="2583">
+<meta itemprop="keywords" content="what,why,HTTP,CORS,HTTPS," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="HTTP的安全机制"/>
+<meta name="twitter:description" content="最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。 对HTTP又有了一些新的理解 并深深的自我怀疑我真的了解HTTP吗？ 。 HTTP的"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">HTTP的安全机制</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-08-21 </span>
+        
+          <span class="more-meta"> 约 2583 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#http的安全机制要解决的问题">HTTP的安全机制要解决的问题</a>
+      <ul>
+        <li><a href="#公开的">公开的</a></li>
+        <li><a href="#从零开始">从零开始</a></li>
+        <li><a href="#可信的">可信的</a></li>
+      </ul>
+    </li>
+    <li><a href="#解决问题的两个核心机制">解决问题的两个核心机制</a>
+      <ul>
+        <li><a href="#https">HTTPS</a></li>
+        <li><a href="#同源策略-same-origin-policy">同源策略 Same-Origin policy</a>
+          <ul>
+            <li><a href="#首先解释几个名词">首先解释几个名词。</a></li>
+            <li><a href="#为什么post请求会被认为是简单请求">为什么POST请求会被认为是简单请求？</a></li>
+            <li><a href="#同源策略是如何运作的">同源策略是如何运作的？</a></li>
+            <li><a href="#在同源策略下如何允许指定的非同源的操作呢">在同源策略下，如何允许指定的非同源的操作呢？</a></li>
+            <li><a href="#一直在说的用户不知情的情况是什么呢">一直在说的用户不知情的情况是什么呢？</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>最近在遇到了一个跨域问题，所以看了一些HTTP安全相关的资料。
+对HTTP又有了一些新的理解 <del>并深深的自我怀疑我真的了解HTTP吗？</del> 。</p>
+<h1 id="http的安全机制要解决的问题">HTTP的安全机制要解决的问题</h1>
+<p>HTTP安全机制要解决的问题就是如何在<strong>公开的</strong>信道上，<strong>从零开始</strong>构建一个<strong>可信的</strong>传输通道。</p>
+<p>在这个问题有几个关键的点需要考虑：</p>
+<ol>
+<li>公开的</li>
+<li>从零开始</li>
+<li>可信的</li>
+</ol>
+<h2 id="公开的">公开的</h2>
+<p>简单理解，公开的就是指的就是在因特网上进行通信。这表明了传输中的数据很容易被监听、篡改以及伪造。</p>
+<h2 id="从零开始">从零开始</h2>
+<p>因为浏览器 <em>(其实是指 HTTP 的 User Agent,下文不区分两个概念)</em> 是易于获得的，又因为互联网的用户在不断的新增，这对HTTP的安全机制提出了期望：</p>
+<p>最好的情况是安全机制能仅基于HTTP通信建立起来一个可信的传输通道。</p>
+<h2 id="可信的">可信的</h2>
+<p>如何定义可信的传输通道呢？我把传输通道拆分为客户端，服务端和传输过程三个部分。</p>
+<p>服务端希望能够鉴别客户端的真实性，包括</p>
+<ol>
+<li>真的是用户甲吗？</li>
+<li>真的是用户甲想执行这个请求吗？</li>
+</ol>
+<p>对于传输过程来说，服务端与客户端都希望</p>
+<ol>
+<li>防篡改</li>
+<li>防伪造</li>
+<li>防窃取</li>
+</ol>
+<p>客户端希望能鉴别服务端的真实性，主要是真的是我想要访问的网站吗？</p>
+<h1 id="解决问题的两个核心机制">解决问题的两个核心机制</h1>
+<p>为了解决上述的问题，HTTP引入了TLS层和浏览器实现的同源策略两个核心机制。</p>
+<h2 id="https">HTTPS</h2>
+<p>HTTPS解决了除服务端对客户端的要求之外的问题。</p>
+<p>对于HTTPS的实现流程不再赘述，资料有很多。主要探讨下HTTPS是如何解决上述问题的。</p>
+<ol>
+<li>
+<p>对于从零开始这个问题，通过非对称加密和引入了根证书来解决。</p>
+</li>
+<li>
+<p>显然能够解决传输过程的问题。</p>
+</li>
+<li>
+<p>客户端能够通过根证书与HTTPS证书来鉴别返回的报文是否真的是想要访问的网站返回的。</p>
+</li>
+</ol>
+<h2 id="同源策略-same-origin-policy">同源策略 Same-Origin policy</h2>
+<p>同源策略解决了服务端对用户端的两个要求，且是对防窃取的一种补充。</p>
+<blockquote>
+<p>同源策略是一个重要的安全策略，它用于限制一个origin的文档或者它加载的脚本如何能与另一个源的资源进行交互。它能帮助阻隔恶意文档，减少可能被攻击的媒介。</p>
+</blockquote>
+<p>先说一个观点，同源策略能够保证<strong>任何第三方不能在服务端和用户都不知情或不配合的情况下，访问非同源的数据或代替用户发起不安全的请求或读取请求的结果</strong>。</p>
+<h3 id="首先解释几个名词">首先解释几个名词。</h3>
+<ul>
+<li>
+<p>什么是源？什么是同源？</p>
+<p>对于源这个概念，<a href="https://developer.mozilla.org/zh-CN/">MDN</a>介绍的很好。</p>
+<p>源就是一个页面的URL的<code>&lt;schema, domain, port&gt;</code>的三元元组。</p>
+<p>同源就是这个三元元组相同。</p>
+</li>
+<li>
+<p>什么是第三方？</p>
+<p>第三方就是不同源的页面（上的脚本）。</p>
+</li>
+<li>
+<p>什么是访问非同源的数据？</p>
+<p>如访问非同源的页面的Cookie、localStorage、indexedDB等。</p>
+</li>
+<li>
+<p>什么是不安全的请求？</p>
+<p>除了<strong>简单请求</strong>，就是不安全的请求，称作<strong>需要执行预检的请求</strong>。</p>
+<p>摘自<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS#%E8%8B%A5%E5%B9%B2%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6%E5%9C%BA%E6%99%AF">HTTP访问控制（CORS）</a></p>
+<blockquote>
+<p>某些请求不会触发 CORS 预检请求。本文称这样的请求为“简单请求”，请注意，该术语并不属于 Fetch （其中定义了 CORS）规范。若请求满足所有下述条件，则该请求可视为“简单请求”：</p>
+<ul>
+<li>
+<p>使用下列方法之一：</p>
+<ul>
+<li>GET</li>
+<li>HEAD</li>
+<li>POST</li>
+</ul>
+</li>
+<li>
+<p>除了被用户代理自动设置的首部字段（例如 Connection ，User-Agent）和在 Fetch 规范中定义为 禁用首部名称 的其他首部，允许人为设置的字段为 Fetch 规范定义的 对 CORS 安全的首部字段集合。该集合为：</p>
+<ul>
+<li>Accept</li>
+<li>Accept-Language</li>
+<li>Content-Language</li>
+<li>Content-Type （需要注意额外的限制）</li>
+<li>DPR</li>
+<li>Downlink</li>
+<li>Save-Data</li>
+<li>Viewport-Width</li>
+<li>Width</li>
+</ul>
+</li>
+<li>
+<p>Content-Type 的值仅限于下列三者之一：</p>
+<ul>
+<li>text/plain</li>
+<li>multipart/form-data</li>
+<li>application/x-www-form-urlencoded</li>
+</ul>
+</li>
+<li>
+<p>请求中的任意XMLHttpRequestUpload 对象均没有注册任何事件监听器；XMLHttpRequestUpload 对象可以使用 XMLHttpRequest.upload 属性访问。</p>
+</li>
+<li>
+<p>请求中没有使用 ReadableStream 对象。</p>
+</li>
+</ul>
+</blockquote>
+</li>
+</ul>
+<h3 id="为什么post请求会被认为是简单请求">为什么POST请求会被认为是简单请求？</h3>
+<p>因为历史上，表单的提交是跨域允许。为了前向兼容，所以做出这种设计。</p>
+<p>那么带来的问题就是，对于Content-Type是text/plain等三种的POST请求要特别注意检查是否是不合预期的跨域访问，而且这个检查要在<strong>执行影响数据的操作之前做</strong>。</p>
+<h3 id="同源策略是如何运作的">同源策略是如何运作的？</h3>
+<p>浏览器会阻止一个页面对不同源的页面进行如下操作：</p>
+<p><em>这些操作会不断调整来适应未来的变化</em></p>
+<ul>
+<li>发送请求（XMLHttpRequest或Fetch）</li>
+<li>访问Cookie/localStorage/indexedDB</li>
+<li>访问DOM</li>
+</ul>
+<ol>
+<li>
+<p>浏览器通常会将发送请求分为<strong>简单请求</strong>和<strong>需要预检的请求</strong>来处理</p>
+<ol>
+<li>简单请求会直接发送，如果返回的结果不包含符合预期的CORS头，那么会阻止脚本获得结果。</li>
+<li>需要预检的请求会先发送一个<code>OPTIONS</code>请求，来获取CORS的配置，避免在不允许访问的时候，对数据产生影响。</li>
+</ol>
+<p>如此，可以保证只有在服务端知道的情况下，才能跨域访问相应的接口来获取数据或者执行操作。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml cors-origin request
+
+== 简单请求 == 
+
+actor 脚本 as script
+participant 浏览器 as browser
+participant 一个没有支持该源跨域访问的服务端 as server
+
+script -&gt; browser: 一个请求其他域的简单请求
+activate browser
+browser -&gt; server: 发送请求
+activate server
+note right: 请求会真实到达服务器
+server -&gt; browser: 响应报文，携带的CORS配置不支持该源的请求
+deactivate server
+browser -&gt; script: 错误：禁止跨域
+deactivate browser
+note right: 只是结果会被拦截
+
+== 非简单请求 ==
+
+
+script -&gt; browser: 一个请求其他域的非简单请求
+activate browser
+browser -&gt; server: 发送一个options请求
+activate server
+note right: 浏览器会先发送一个\noptions请求来查询\n服务器的跨域配置，\n真实的请求不会被发送到服务器
+server -&gt; browser: 返回结果，携带的CORS配置不支持该源的请求
+deactivate server
+browser -&gt; script: 错误：禁止跨域
+deactivate browser
+
+@enduml
+</code></pre></li>
+<li>
+<p>浏览器会阻止一个页面上的脚本访问非同源的localStorage/indexedDB或非同父域且非同源的Cookie</p>
+<p>这样就能够保证客户端的Cookie等不会在用户不知情的情况下被窃取，这是基于Cookie保存登录态的基础。</p>
+</li>
+<li>
+<p>浏览器会阻止一个页面上的脚本访问非同源的页面的DOM</p>
+<p>这样能够保证页面上的数据不被非同源的页面的脚本窃取。</p>
+</li>
+</ol>
+<h3 id="在同源策略下如何允许指定的非同源的操作呢">在同源策略下，如何允许指定的非同源的操作呢？</h3>
+<p><em>同源策略是一个积极的机制，对于HTTP是有效的补充，所以我个人不太喜欢<strong>绕过</strong>之类的描述。</em></p>
+<p>值得一提的是，这些操作的方式，都是需要被跨域的一侧进行支持的，即不满足<strong>不知情</strong>的条件。</p>
+<p>本文暂不具体介绍各种方式实现的细节，仅提供一些参考。</p>
+<ol>
+<li>
+<p>【推荐】【允许跨域请求】CORS Cross-Origin Resource Sharing</p>
+<p>这是协议推荐的标准实现。</p>
+</li>
+<li>
+<p>【允许跨域请求】 JSONP</p>
+<p>原理是<code>script</code>标签的加载，不被同源策略限制。</p>
+<p>服务端需要配合处理特定的js文件加载请求。</p>
+</li>
+<li>
+<p>【推荐】【允许访问DOM或存储】 html5的<code>postMessage()</code></p>
+</li>
+<li>
+<p>【允许访问DOM或存储】 iframe通过fragment/name通信</p>
+</li>
+</ol>
+<h3 id="一直在说的用户不知情的情况是什么呢">一直在说的用户不知情的情况是什么呢？</h3>
+<p>因为HTTP请求是可以任意构造的，如果用户是个懂哥，就可以绕过这些限制。</p>
+<h1 id="参考">参考</h1>
+<ul>
+<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/Security/Same-origin_policy">MDN对于同源策略的介绍</a></li>
+<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS">MDN关于HTTP访问控制CORS的文章</a></li>
+</ul>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2020-08-21
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/what/">what</a>
+          <a href="/tags/why/">why</a>
+          <a href="/tags/http/">HTTP</a>
+          <a href="/tags/cors/">CORS</a>
+          <a href="/tags/https/">HTTPS</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/linux/interrupt-and-exception/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">中断与异常</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/memo/regex/">
+            <span class="next-text nav-default">正则表达式速查</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2020-08-21 23:17:27 \u002b0800 \u002b0800',
+        title: 'HTTP的安全机制',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

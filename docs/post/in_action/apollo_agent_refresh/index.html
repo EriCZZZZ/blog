@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>[有趣事情的发生]携程apollo配置更新推送的实现 - blog</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="er1c" /><meta name="description" content="最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。
+看过redis的实现之后感觉阅读源码变得容易了一些。
+看了一些项目之后发现有些遗忘了，在兄弟的鼓励下意识到 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。
+这个系列我打算稍微思考之后起一个名字。 思来想去，感觉这个系列是想记录一些纤细巧妙的实现， 所以就叫做：有趣事情的发生。
+希望能够坚持下去。
+" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.84.1 with theme even" />
+
+
+<link rel="canonical" href="https://blog.er1c.dev/post/in_action/apollo_agent_refresh/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.99ef914e99302322a8a949595103c2ba29f73403c3c901845e86493f1c9adbe0.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="[有趣事情的发生]携程apollo配置更新推送的实现" />
+<meta property="og:description" content="最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。
+看过redis的实现之后感觉阅读源码变得容易了一些。
+看了一些项目之后发现有些遗忘了，在兄弟的鼓励下意识到 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。
+这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。
+希望能够坚持下去。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://blog.er1c.dev/post/in_action/apollo_agent_refresh/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-01-21T20:04:39&#43;08:00" />
+<meta property="article:modified_time" content="2021-01-21T20:04:39&#43;08:00" />
+
+<meta itemprop="name" content="[有趣事情的发生]携程apollo配置更新推送的实现">
+<meta itemprop="description" content="最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。
+看过redis的实现之后感觉阅读源码变得容易了一些。
+看了一些项目之后发现有些遗忘了，在兄弟的鼓励下意识到 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。
+这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。
+希望能够坚持下去。"><meta itemprop="datePublished" content="2021-01-21T20:04:39&#43;08:00" />
+<meta itemprop="dateModified" content="2021-01-21T20:04:39&#43;08:00" />
+<meta itemprop="wordCount" content="2812">
+<meta itemprop="keywords" content="how,feat-in-action," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="[有趣事情的发生]携程apollo配置更新推送的实现"/>
+<meta name="twitter:description" content="最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。
+看过redis的实现之后感觉阅读源码变得容易了一些。
+看了一些项目之后发现有些遗忘了，在兄弟的鼓励下意识到 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。
+这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。
+希望能够坚持下去。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/memo/">
+        <li class="mobile-menu-item">备忘录</li>
+      </a><a href="/about-me/">
+        <li class="mobile-menu-item">about</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/memo/">备忘录</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about-me/">about</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">[有趣事情的发生]携程apollo配置更新推送的实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-01-21 </span>
+        
+          <span class="more-meta"> 约 2812 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        
+      </div>
+    </header>
+
+    
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content always-active">
+      <nav id="TableOfContents">
+  <ul>
+    <li><a href="#配置投送的流程">配置投送的流程</a></li>
+    <li><a href="#分析与小结">分析与小结</a></li>
+  </ul>
+</nav>
+    </div>
+  </div>
+
+
+    <div class="post-content">
+      <p>最近两个月在学习上一个是看了DDIA，一个是看了一些开源项目的源码。</p>
+<p>看过redis的实现之后感觉阅读源码变得容易了一些。</p>
+<p>看了一些项目之后发现有些遗忘了，<del>在兄弟的鼓励下意识到</del> 博客好久不更新，正好今天周会无所事事，便开一个新的系列来记录这些学习的经历。</p>
+<p>这个系列我打算稍微思考之后起一个名字。
+思来想去，感觉这个系列是想记录一些纤细巧妙的实现，
+所以就叫做：有趣事情的发生。</p>
+<p><em>希望能够坚持下去。</em></p>
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+            
+                <div class="serial-index">
+                    <p>系列列表</p>
+                    <ul>
+                    
+                        <li><a href="https://blog.er1c.dev/post/in_action/apollo_agent_refresh/">[有趣事情的发生]携程apollo配置更新推送的实现</a></li>
+                    
+                    </ul>
+                </div>
+            
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+        
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+    
+        
+    
+
+    
+
+    
+
+
+
+<p><a href="https://github.com/ctripcorp/apollo">携程的apollo</a>是一个分布式、高可用的配置服务。
+因为工作中有一个也叫做apollo也是分布式、高可用的配置服务。
+<del>本来以为是魔改版的，不过到现在我也没有搞清楚两者的关系</del></p>
+<p>配置服务，顾名思义就是配置一些参数，
+然后主动、被动的令客户端感知。</p>
+<p>根据功能来看，如果是单机实现，是很简单的：</p>
+<ol>
+<li>一个配置后台提供增删改</li>
+<li>客户端sdk查询配置内容</li>
+</ol>
+<p>要求分布式与高可用，就需要考虑多一些东西。</p>
+<ol>
+<li>考虑到配置系统是一个明显的少写多读且无写热点的业务，
+性能上更多的关注下读取的性能与配置生效的延迟</li>
+<li>分布式与高可用通过Eureka来提供了基础的服务发现功能，
+在调用的上游做负载均衡、错误重试等</li>
+</ol>
+<p>详细的设计官方提供了比较好的<a href="https://ctripcorp.github.io/apollo/#/zh/README">文档</a>这里就不再赘述。</p>
+<p>在开始介绍更新变更的通知的实现之前，不得不赞叹一句：
+Spring在工业化开发上确实有可取之处。</p>
+<h1 id="配置投送的流程">配置投送的流程</h1>
+<p>首先引入官方的设计图：</p>
+<p><img src="https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/overall-architecture.png" alt="apollo-design-from-official"></p>
+<p>配置从右上角的<code>portal</code>接入，走<code>remoteCallAPI</code>到<code>Admin Service</code>保存到<code>ConfigDB</code>。</p>
+<p><code>ConfigDB</code>是一个Mysql数据库，每次变更都会在表中记录变更的记录。</p>
+<p><code>Admin Service</code>会在每次配置变更的时候向数据库(MySQL)写入通知，<code>Config Service</code>通过定时扫描对应的表来查询是否有变化。</p>
+<p>写入的地方在<code>com.ctrip.framework.apollo.biz.message.DatabaseMessageSender#sendMessage</code>，
+可以看到在release的时候会调用。</p>
+<p>扫描的地方在<code>com.ctrip.framework.apollo.biz.message.ReleaseMessageScanner#scanMessages</code>。
+具体的会每次扫描五百条release消息，
+然后更新本地的消费过的消息id(<code>com.ctrip.framework.apollo.biz.message.ReleaseMessageScanner#maxIdScanned</code>)，
+触发注册的handler(<code>com.ctrip.framework.apollo.biz.message.ReleaseMessageScanner#fireMessageScanned</code>)。</p>
+<p>可以看到代码非常的简单，也没有什么奇特的操作。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">private</span> <span class="kt">void</span> <span class="nf">fireMessageScanned</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">ReleaseMessage</span><span class="o">&gt;</span> <span class="n">messages</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">for</span> <span class="o">(</span><span class="n">ReleaseMessage</span> <span class="n">message</span> <span class="o">:</span> <span class="n">messages</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(</span><span class="n">ReleaseMessageListener</span> <span class="n">listener</span> <span class="o">:</span> <span class="n">listeners</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">try</span> <span class="o">{</span>
+        <span class="n">listener</span><span class="o">.</span><span class="na">handleMessage</span><span class="o">(</span><span class="n">message</span><span class="o">,</span> <span class="n">Topics</span><span class="o">.</span><span class="na">APOLLO_RELEASE_TOPIC</span><span class="o">);</span>
+      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Throwable</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Tracer</span><span class="o">.</span><span class="na">logError</span><span class="o">(</span><span class="n">ex</span><span class="o">);</span>
+        <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&#34;Failed to invoke message listener {}&#34;</span><span class="o">,</span> <span class="n">listener</span><span class="o">.</span><span class="na">getClass</span><span class="o">(),</span> <span class="n">ex</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>现在唯一不清楚的地方就在于什么时候注册了handler到<code>listener</code>中，
+另外我还对这种实现有一些性能上的担忧，如果连接的client过多会不会影响性能。</p>
+<p>通过追踪<code>listener</code>的调用，
+发现只有<code>com.ctrip.framework.apollo.biz.message.ReleaseMessageScanner#addMessageListener</code>调用了<code>add</code>方法。
+然后发现只注册了有限的handler，不是每个client都会注册handler。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="n">ReleaseMessageScanner</span> <span class="nf">releaseMessageScanner</span><span class="o">()</span> <span class="o">{</span>
+  <span class="n">ReleaseMessageScanner</span> <span class="n">releaseMessageScanner</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ReleaseMessageScanner</span><span class="o">();</span>
+  <span class="c1">//0. handle release message cache
+</span><span class="c1"></span>  <span class="n">releaseMessageScanner</span><span class="o">.</span><span class="na">addMessageListener</span><span class="o">(</span><span class="n">releaseMessageServiceWithCache</span><span class="o">);</span>
+  <span class="c1">//1. handle gray release rule
+</span><span class="c1"></span>  <span class="n">releaseMessageScanner</span><span class="o">.</span><span class="na">addMessageListener</span><span class="o">(</span><span class="n">grayReleaseRulesHolder</span><span class="o">);</span>
+  <span class="c1">//2. handle server cache
+</span><span class="c1"></span>  <span class="n">releaseMessageScanner</span><span class="o">.</span><span class="na">addMessageListener</span><span class="o">(</span><span class="n">configService</span><span class="o">);</span>
+  <span class="n">releaseMessageScanner</span><span class="o">.</span><span class="na">addMessageListener</span><span class="o">(</span><span class="n">configFileController</span><span class="o">);</span>
+  <span class="c1">//3. notify clients
+</span><span class="c1"></span>  <span class="n">releaseMessageScanner</span><span class="o">.</span><span class="na">addMessageListener</span><span class="o">(</span><span class="n">notificationControllerV2</span><span class="o">);</span>
+  <span class="n">releaseMessageScanner</span><span class="o">.</span><span class="na">addMessageListener</span><span class="o">(</span><span class="n">notificationController</span><span class="o">);</span>
+  <span class="k">return</span> <span class="n">releaseMessageScanner</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>可以看到注册了很多handler，其中实现下发的handler是<code>notificationControllerV2</code>。</p>
+<p>继续跟踪下去，省略了一些解析message和检查的代码，
+可以看到实际下发的操作是向<code>DeferredResult</code>写入结果来实现的，
+而且之前担心的性能问题在这里通过超过阈值后会异步通知来避免阻塞扫描-通知线程。</p>
+<p>具体的，在异步任务中，会每发送一组后sleep一段时间，
+因为对于Java的调度不了解，所以这里先猜测一下是让出资源，
+避免影响其他线程执行，以后有机会再来了解一下。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">//do async notification if too many clients
+</span><span class="c1"></span><span class="k">if</span> <span class="o">(</span><span class="n">results</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="n">bizConfig</span><span class="o">.</span><span class="na">releaseMessageNotificationBatch</span><span class="o">())</span> <span class="o">{</span>
+  <span class="n">largeNotificationBatchExecutorService</span><span class="o">.</span><span class="na">submit</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+    <span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">&#34;Async notify {} clients for key {} with batch {}&#34;</span><span class="o">,</span> <span class="n">results</span><span class="o">.</span><span class="na">size</span><span class="o">(),</span> <span class="n">content</span><span class="o">,</span>
+        <span class="n">bizConfig</span><span class="o">.</span><span class="na">releaseMessageNotificationBatch</span><span class="o">());</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">results</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="n">0</span> <span class="o">&amp;&amp;</span> <span class="n">i</span> <span class="o">%</span> <span class="n">bizConfig</span><span class="o">.</span><span class="na">releaseMessageNotificationBatch</span><span class="o">()</span> <span class="o">==</span> <span class="n">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+          <span class="n">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="n">bizConfig</span><span class="o">.</span><span class="na">releaseMessageNotificationBatchIntervalInMilli</span><span class="o">());</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+          <span class="c1">//ignore
+</span><span class="c1"></span>        <span class="o">}</span>
+      <span class="o">}</span>
+      <span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">&#34;Async notify {}&#34;</span><span class="o">,</span> <span class="n">results</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+      <span class="n">results</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="na">setResult</span><span class="o">(</span><span class="n">configNotification</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="o">});</span>
+  <span class="k">return</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">&#34;Notify {} clients for key {}&#34;</span><span class="o">,</span> <span class="n">results</span><span class="o">.</span><span class="na">size</span><span class="o">(),</span> <span class="n">content</span><span class="o">);</span>
+
+<span class="k">for</span> <span class="o">(</span><span class="n">DeferredResultWrapper</span> <span class="n">result</span> <span class="o">:</span> <span class="n">results</span><span class="o">)</span> <span class="o">{</span>
+  <span class="n">result</span><span class="o">.</span><span class="na">setResult</span><span class="o">(</span><span class="n">configNotification</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>现在就很明确了，
+写入<code>com.ctrip.framework.apollo.configservice.controller.NotificationControllerV2#deferredResults</code>的地方就是注册客户端的地方。</p>
+<p><code>com.ctrip.framework.apollo.configservice.controller.NotificationControllerV2#pollNotification</code>就是我们要找的最后的一个节点，
+这是一个HTTP的endpoint，返回的是一个<code>DeferredResult</code>，这表示这会是一个长HTTP链接。</p>
+<p><em>com/ctrip/framework/apollo/configservice/controller/NotificationControllerV2.java:118</em></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="n">DeferredResultWrapper</span> <span class="n">deferredResultWrapper</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DeferredResultWrapper</span><span class="o">(</span><span class="n">bizConfig</span><span class="o">.</span><span class="na">longPollingTimeoutInMilli</span><span class="o">());</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这里可以看到设置了过期时间，默认是60s。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="c1">//register all keys
+</span><span class="c1"></span><span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">key</span> <span class="o">:</span> <span class="n">watchedKeys</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">this</span><span class="o">.</span><span class="na">deferredResults</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">deferredResultWrapper</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后注册了关注的key，在完成的回调中移除了。</p>
+<p>到此为止，就是整个配置发版之后通知到client的流程。</p>
+<h1 id="分析与小结">分析与小结</h1>
+<p>总的来说，功能的实现非常的简单，实现了一个<strong>极少写，及时感知变化</strong>的系统，下面从最一开始来分析整个系统的实现思路。</p>
+<p>系统的目标有一个是配置下发系统，要求可靠，以及在下发的时候需要一些性能。</p>
+<p>可靠这一点apollo通过Eureka的可靠性来保证，存储上利用MySQL来保证。
+以上的两点都是保证了“服务的可用”，
+稍微多一些，实际的业务中的可靠可能更加的宽松一些，只要client能够读取到配置就可以了，
+那么可以在client上做一些缓存的策略，对于一台机器来说，能部署的实例和需要的配置项都是有限的，所以应该是可行的。</p>
+<p>对于性能，我一直认为要根据业务的特性来设计，apollo的设计我觉得就很贴合业务场景。
+配置的变更是一个频率很小的事情，
+而读取则要大的多，所以是一个很明显的少写多读的场景。
+相对于普通的少写多读，配置系统还要求生效的时效性。</p>
+<p>这么一来，解决方案就朝着主动推送去了，
+这里考虑到频繁的轮询对于性能和资源是有影响和浪费的，
+所以换成一个长链接来监听数据的变化，通过<code>Admin Service</code>内部的合并，最终转化成较少的sql查询。</p>
+<p>整个系统通过一步一步的转换，没有增加更多的外部依赖就实现了需求。</p>
+<p>这种简单的实现方式令人印象深刻，
+在日常的开发中，
+我会经常会想用很多“花里胡哨”的方案，显然，这是一种错误。
+为了避免这种问题，一个是思路上要避免过度的追求新技术，
+另一个是要关注业务的特点，发现可以做trade-off的地方。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">er1c</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2021-01-21
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/how/">how</a>
+          <a href="/tags/feat-in-action/">feat-in-action</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/redis/rdb/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">redis RDB的实现</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/http/websocket/">
+            <span class="next-text nav-default">学习Websocket</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2021-01-21 20:04:39 \u002b0800 \u002b0800',
+        title: '[有趣事情的发生]携程apollo配置更新推送的实现',
+        clientID: '7db395cd884df491da26',
+        clientSecret: 'af86f1d50732b5ddd11fbea67da73c1d4c2880eb',
+        repo: 'blog',
+        owner: 'er1c-zh',
+        admin: ['er1c-zh'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:ericzhao96@hotmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/er1c-zh" class="iconfont icon-github" title="github"></a>
+  <a href="https://blog.er1c.dev/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">er1c</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/jmnote/plantuml-encoder@1.2.4/dist/plantuml-encoder.min.js" integrity="sha256-Qsk2KRBCN5qVZX7B+8+2IvQl1Aqc723qV1tBCQaVoqo=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/svg/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+  let ditaaPrefix = "language-ditaa";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + ditaaPrefix + "]"), function(code){
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'https://www.plantuml.com/plantuml/png/~1' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+
+
+
+
+<script type="text/javascript" src="/js/main.min.2517c0eb67172a0bae917de4af59b10ca2531411a009d4c0b82f5685259e5771.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+      TeX: {equationNumbers: {autoNumber: "AMS"}},
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"  integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-125096767-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>
